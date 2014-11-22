@@ -1,0 +1,13 @@
+[package]
+
+name = "ftp"
+version = "0.0.1"
+authors = ["Matt McCoy <mattnenterprise@yahoo.com>"]
+
+[lib]
+name ="ftp"
+path = "src/ftp.rs"
+
+[[bin]]
+name = "example"
+path = "example.rs"
