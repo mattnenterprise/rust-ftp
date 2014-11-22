@@ -4,6 +4,7 @@ FTP client for Rust
 
 This client isn't really finished yet. It still requires a lot of work.
 
+
 [![Build Status](https://travis-ci.org/mattnenterprise/rust-ftp.svg)](https://travis-ci.org/mattnenterprise/rust-ftp)
 
 ### Installation
