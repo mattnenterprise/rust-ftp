@@ -6,7 +6,7 @@ extern crate regex;
 
 #[phase(plugin)] extern crate regex_macros;
 
-use std::io::{IoResult, TcpStream, BufferedReader};
+use std::io::{IoResult, TcpStream, BufferedReader, BufferedWriter};
 use std::result::{Result};
 use std::string::{String};
 
@@ -107,6 +107,21 @@ impl FTPStream {
 		}
 	}
 
+	/// This creates new directories on the server.
+	pub fn make_dir(&mut self, pathname: &str) -> Result<(), String> {
+		let mkdir_command = format!("MKD {}\r\n", pathname);
+
+		match self.command_stream.write_str(mkdir_command.as_slice()) {
+			Ok(_) => (),
+			Err(_) => return Err(format!("Write Error"))
+		}
+
+		match self.read_response(257) {
+			Ok(_) => Ok(()),
+			Err(e) => Err(e)
+		}
+	}
+
 	/// Runs the PASV command.
 	pub fn pasv(&mut self) -> Result<(int), String> {
 		let pasv_command = format!("PASV\r\n");
@@ -167,6 +182,46 @@ impl FTPStream {
 			Ok(_) => Ok(data_stream),
 			Err(e) => Err(e)
 		}
+	}
+
+	/// Removes the remote pathname from the server.
+	pub fn remove_dir(&mut self, pathname: &str) -> Result<(), String> {
+		let rmd_command = format!("RMD {}\r\n", pathname);
+
+		match self.command_stream.write_str(rmd_command.as_slice()) {
+			Ok(_) => (),
+			Err(_) => return Err(format!("Write Error"))
+		}
+
+		match self.read_response(250) {
+			Ok(_) => Ok(()),
+			Err(e) => Err(e)
+		}
+	}
+
+	/// This stores a file on the server.
+	pub fn stor(&mut self, filename: &str) -> Result<BufferedWriter<TcpStream>, String> {
+		let stor_command = format!("STOR {}\r\n", filename);
+
+		let port = match self.pasv() {
+			Ok(p) => p,
+			Err(e) => return Err(e)
+		};
+
+		let connect_string = format!("{}:{}", self.host, port);
+		let data_stream = BufferedWriter::new(TcpStream::connect(connect_string.as_slice()).unwrap());
+
+		match self.command_stream.write_str(stor_command.as_slice()) {
+			Ok(_) => (),
+			Err(_) => return Err(format!("Write Error"))
+		}
+
+		match self.read_response(150) {
+			Ok(_) => (),
+			Err(e) => return Err(e)
+		}
+
+		Ok(data_stream)
 	}
 
 	//Retrieve single line response
