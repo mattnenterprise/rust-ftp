@@ -10,6 +10,7 @@ use std::io::{IoResult, TcpStream, BufferedReader};
 use std::result::{Result};
 use std::string::{String};
 
+/// Stream to interface with the FTP server. This interface is only for the command stream.
 pub struct FTPStream {
 	command_stream: TcpStream,
 	pub host: &'static str,
@@ -18,6 +19,7 @@ pub struct FTPStream {
 
 impl FTPStream {
 	
+	/// Creates an FTP Stream.
 	pub fn connect(host: &'static str, port: u16) -> IoResult<FTPStream> {
 		let connect_string = format!("{}:{}", host, port);
 		let tcp_stream = try!(TcpStream::connect(connect_string.as_slice()));
@@ -33,6 +35,7 @@ impl FTPStream {
 		Ok(ftp_stream)
 	}
 
+	/// Log in to the FTP server.
 	pub fn login(&mut self, user: &str, password: &str) -> Result<(), String> {
 		let user_command = format!("USER {}\r\n", user);
 		let pass_command = format!("PASS {}\r\n", password);
@@ -59,6 +62,7 @@ impl FTPStream {
 		}
 	}
 
+	/// Change the current directory to the path specified.
 	pub fn change_dir(&mut self, path: &str) -> Result<(), String> {
 		let cwd_command = format!("CWD {}\r\n", path);
 
@@ -73,6 +77,7 @@ impl FTPStream {
 		}
 	}
 
+	/// Move the current directory to the parent directory.
 	pub fn change_dir_to_parent(&mut self) -> Result<(), String> {
 		let cdup_command = format!("CDUP\r\n");
 
@@ -87,6 +92,7 @@ impl FTPStream {
 		}
 	}
 
+	/// This does nothing. This is usually just used to keep the connection open.
 	pub fn noop(&mut self) -> Result<(), String> {
 		let noop_command = format!("NOOP\r\n");
 
@@ -101,6 +107,7 @@ impl FTPStream {
 		}
 	}
 
+	/// Runs the PASV command.
 	pub fn pasv(&mut self) -> Result<(int), String> {
 		let pasv_command = format!("PASV\r\n");
 
@@ -124,6 +131,7 @@ impl FTPStream {
 		}
 	}
 
+	/// Quits the current FTP session.
 	pub fn quit(&mut self) -> Result<(int, String), String> {
 		let quit_command = format!("QUIT\r\n");
 		
@@ -138,6 +146,7 @@ impl FTPStream {
 		}
 	}
 
+	/// Retrieves the file name specified from the server.
 	pub fn retr(&mut self, file_name: &str) -> Result<BufferedReader<TcpStream>, String> {
 		let retr_command = format!("RETR {}\r\n", file_name);
 
