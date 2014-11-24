@@ -26,7 +26,7 @@ impl FTPStream {
 			host: host,
 			command_port: port
 		};
-		match ftp_stream.read_response() {
+		match ftp_stream.read_response(220) {
 			Ok(_) => (),
 			Err(e) => println!("{}", e)
 		}
@@ -42,7 +42,7 @@ impl FTPStream {
 			Err(_) => return Err(format!("Write Error"))
 		}
 
-		match self.read_response() {
+		match self.read_response(331) {
 			Ok(_) => {
 
 				match self.command_stream.write_str(pass_command.as_slice()) {
@@ -50,7 +50,7 @@ impl FTPStream {
 					Err(_) => return Err(format!("Write Error"))
 				}
 
-				match self.read_response() {
+				match self.read_response(230) {
 					Ok(_) => Ok(()),
 					Err(s) => Err(s)
 				}
@@ -67,7 +67,7 @@ impl FTPStream {
 			Err(_) => return Err(format!("Write Error"))
 		}
 
-		match self.read_response() {
+		match self.read_response(250) {
 			Ok(_) => Ok(()),
 			Err(e) => Err(e)
 		}
@@ -81,7 +81,7 @@ impl FTPStream {
 			Err(_) => return Err(format!("Write Error"))
 		}
 
-		match self.read_response() {
+		match self.read_response(250) {
 			Ok(_) => Ok(()),
 			Err(s) => Err(s)
 		}
@@ -95,7 +95,7 @@ impl FTPStream {
 			Err(_) => return Err(format!("Write Error"))
 		}
 
-		match self.read_response() {
+		match self.read_response(200) {
 			Ok(_) => Ok(()),
 			Err(s) => Err(s)
 		}
@@ -113,7 +113,7 @@ impl FTPStream {
 
 		let response_regex = regex!(r"(.*)\(\d+,\d+,\d+,\d+,(\d+),(\d+)\)(.*)");
 
-		match self.read_response() {
+		match self.read_response(227) {
 			Ok((_, line)) => {
 				let caps = response_regex.captures(line.as_slice()).unwrap();
 				let first_part_port: int = from_str(caps.at(2)).unwrap();
@@ -132,7 +132,7 @@ impl FTPStream {
 			Err(_) => return Err(format!("Write Error"))
 		}
 
-		match self.read_response() {
+		match self.read_response(221) {
 			Ok((code, message)) => Ok((code, message)),
 			Err(message) => Err(message),
 		}
@@ -154,14 +154,14 @@ impl FTPStream {
 			Err(_) => return Err(format!("Write Error"))
 		}
 
-		match self.read_response() {
+		match self.read_response(150) {
 			Ok(_) => Ok(data_stream),
 			Err(e) => Err(e)
 		}
 	}
 
 	//Retrieve single line response
-	fn read_response(&mut self) -> Result<(int, String), String> {
+	fn read_response(&mut self, expected_code: int) -> Result<(int, String), String> {
 		//Carriage return
 		let cr = 0x0d;
 		//Line Feed
@@ -186,8 +186,11 @@ impl FTPStream {
     	}
 
     	let v: Vec<&str> = trimmed_response.splitn(1, ' ').collect();
-    	let code = from_str(v[0]).unwrap();
+    	let code: int = from_str(v[0]).unwrap();
     	let message = v[1];
+    	if code != expected_code {
+    		return Err(format!("Invalid response: {} {}", code, message))
+    	}
     	Ok((code, String::from_str(message)))
 	}
 }
