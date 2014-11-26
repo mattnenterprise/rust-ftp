@@ -9,6 +9,7 @@ extern crate regex;
 use std::io::{IoResult, TcpStream, BufferedReader, BufferedWriter};
 use std::result::{Result};
 use std::string::{String};
+use std::io::util::copy;
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 pub struct FTPStream {
@@ -200,7 +201,7 @@ impl FTPStream {
 	}
 
 	/// This stores a file on the server.
-	pub fn stor(&mut self, filename: &str) -> Result<BufferedWriter<TcpStream>, String> {
+	pub fn stor<R: Reader>(&mut self, filename: &str, r: &mut R) -> Result<(), String> {
 		let stor_command = format!("STOR {}\r\n", filename);
 
 		let port = match self.pasv() {
@@ -209,7 +210,7 @@ impl FTPStream {
 		};
 
 		let connect_string = format!("{}:{}", self.host, port);
-		let data_stream = BufferedWriter::new(TcpStream::connect(connect_string.as_slice()).unwrap());
+		let data_stream: &mut BufferedWriter<TcpStream> = &mut BufferedWriter::new(TcpStream::connect(connect_string.as_slice()).unwrap());
 
 		match self.command_stream.write_str(stor_command.as_slice()) {
 			Ok(_) => (),
@@ -221,7 +222,16 @@ impl FTPStream {
 			Err(e) => return Err(e)
 		}
 
-		Ok(data_stream)
+		match copy(r, data_stream) {
+			Ok(_) => {
+				drop(data_stream);
+				Ok(())
+			},
+			Err(_) => {
+				drop(data_stream);
+				Err(format!("Error Writing"))
+			}
+		}
 	}
 
 	//Retrieve single line response
