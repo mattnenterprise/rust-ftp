@@ -1,50 +1,48 @@
 extern crate ftp;
 
 use std::str;
-use std::slice::bytes::MutableByteVector;
+use std::io::{MemReader};
 use ftp::FTPStream;
 
 fn main() {
-	let mut ftp_stream = match FTPStream::connect("ftp.ietf.org", 21) {
+	let mut ftp_stream = match FTPStream::connect("127.0.0.1", 21) {
         Ok(s) => s,
         Err(e) => panic!("{}", e)
     };
 
-    match ftp_stream.login("anonymous", "somedude@yahoo.com") {
-    	Ok(_) => (),
-    	Err(e) => panic!("{}", e)
-    }
-
-    match ftp_stream.change_dir("ietf/ftpext/") {
+    match ftp_stream.login("username", "password") {
         Ok(_) => (),
         Err(e) => panic!("{}", e)
     }
 
-    let mut data_stream = match ftp_stream.retr("ftpext-charter.txt") {
-        Ok(data_stream) => data_stream,
+    match ftp_stream.current_dir() {
+        Ok(dir) => println!("{}", dir),
+        Err(e) => panic!("{}", e)
+    }
+
+    match ftp_stream.change_dir("test_data") {
+        Ok(_) => (),
+        Err(e) => panic!("{}", e)
+    }
+
+    //An easy way to retreive a file
+    let remote_file = match ftp_stream.simple_retr("ftpext-charter.txt") {
+        Ok(file) => file,
         Err(e) => panic!("{}", e)
     };
 
-    let mut buf = [0, ..100];
-    let mut still_reading = true;
-    while still_reading {
-        buf.set_memory(0);
-        match data_stream.read(&mut buf) {
-            Ok(nread) => {
-                if nread == 0 {
-                    still_reading = false;
-                } else {
-                    match str::from_utf8(&buf) {
-                        Some(s) => print!("{}", s),
-                        None => panic!("Failure")
-                    };
-                }
-            }
-            Err(_) => still_reading = false,
-        }
-    }
+    match str::from_utf8(remote_file.into_inner().as_slice()) {
+        Some(s) => print!("{}", s),
+        None => panic!("Error reading file data")
+    };
 
-    drop(data_stream);
+    //Store a file
+    let file_data = format!("Some awesome file data man!!");
+    let reader = &mut MemReader::new(file_data.into_bytes());
+    match ftp_stream.stor("my_random_file.txt", reader) {
+        Ok(_) => (),
+        Err(e) => panic!("{}", e)
+    }
 
     let _ = ftp_stream.quit();
 }

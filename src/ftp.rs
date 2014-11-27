@@ -1,14 +1,14 @@
 #![crate_name = "ftp"]
 #![crate_type = "lib"]
-#![feature(phase)]
+#![feature(phase, slicing_syntax)]
 
 extern crate regex;
 
 #[phase(plugin)] extern crate regex_macros;
 
-use std::io::{IoResult, TcpStream, BufferedReader, BufferedWriter};
-use std::result::{Result};
-use std::string::{String};
+use std::io::{IoResult, TcpStream, BufferedReader, BufferedWriter, MemReader, EndOfFile};
+use std::result::Result;
+use std::string::String;
 use std::io::util::copy;
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
@@ -93,6 +93,56 @@ impl FTPStream {
 		}
 	}
 
+	/// Gets the current directory
+	pub fn current_dir(&mut self) -> Result<String, String> {
+		fn index_of(string: &str, ch: char) -> int {
+			let mut i = -1;
+			let mut index = 0;
+			for c in string.chars() {
+				if c == ch {
+					i = index;
+					return i
+				}
+				index+=1;
+			}
+			return i;
+		}
+
+		fn last_index_of(string: &str, ch: char) -> int {
+			let mut i = -1;
+			let mut index = 0;
+			for c in string.chars() {
+				if c == ch {
+					i = index;
+				}
+				index+=1;
+			}
+			return i;
+		}
+		let pwd_command = format!("PWD\r\n");
+
+		match self.command_stream.write_str(pwd_command.as_slice()) {
+			Ok(_) => (),
+			Err(e) => return Err(format!("{}", e))
+		}
+
+		match self.read_response(257) {
+			Ok((_, line)) => {
+				let begin = index_of(line.as_slice(), '"');
+				let end = last_index_of(line.as_slice(), '"');
+
+				if begin == -1 || end == -1 {
+					return Err(format!("Invalid PWD Response: {}", line))
+				}
+				let b = begin as uint;
+				let e = end as uint;
+
+				return Ok(String::from_str(line.as_slice()[b+1..e]))
+			},
+			Err(e) => Err(e)
+		}
+	}
+
 	/// This does nothing. This is usually just used to keep the connection open.
 	pub fn noop(&mut self) -> Result<(), String> {
 		let noop_command = format!("NOOP\r\n");
@@ -162,7 +212,8 @@ impl FTPStream {
 		}
 	}
 
-	/// Retrieves the file name specified from the server.
+	/// Retrieves the file name specified from the server. This method is a more complicated way to retrieve a file. The reader returned should be dropped.
+	/// Also you will have to read the response to make sure it has the correct value.
 	pub fn retr(&mut self, file_name: &str) -> Result<BufferedReader<TcpStream>, String> {
 		let retr_command = format!("RETR {}\r\n", file_name);
 
@@ -185,6 +236,44 @@ impl FTPStream {
 		}
 	}
 
+	fn simple_retr_(&mut self, file_name: &str) -> Result<MemReader, String> {
+		let mut data_stream = match self.retr(file_name) {
+			Ok(s) => s,
+			Err(e) => return Err(e)
+		};
+
+		let buffer: &mut Vec<u8> = &mut Vec::new();
+		loop {
+			let mut buf = [0, ..256];
+			let len = match data_stream.read(&mut buf) {
+            	Ok(len) => len,
+            	Err(ref e) if e.kind == EndOfFile => break,
+            	Err(e) => return Err(format!("{}", e)),
+        	};
+        	match buffer.write(buf[..len]) {
+        		Ok(_) => (),
+        		Err(e) => return Err(format!("{}", e))
+        	};
+		}
+
+		drop(data_stream);
+
+		Ok(MemReader::new(buffer.clone()))
+	}
+
+	/// Simple way to retr a file from the server. This stores the file in memory.
+	pub fn simple_retr(&mut self, file_name: &str) -> Result<MemReader, String> {
+		let r = match self.simple_retr_(file_name) {
+			Ok(reader) => reader,
+			Err(e) => return Err(e)
+		};
+
+		match self.read_response(226) {
+			Ok(_) => Ok(r),
+			Err(e) => Err(e)
+		}
+	}
+
 	/// Removes the remote pathname from the server.
 	pub fn remove_dir(&mut self, pathname: &str) -> Result<(), String> {
 		let rmd_command = format!("RMD {}\r\n", pathname);
@@ -200,8 +289,7 @@ impl FTPStream {
 		}
 	}
 
-	/// This stores a file on the server.
-	pub fn stor<R: Reader>(&mut self, filename: &str, r: &mut R) -> Result<(), String> {
+	fn stor_<R: Reader>(&mut self, filename: &str, r: &mut R) -> Result<(), String> {
 		let stor_command = format!("STOR {}\r\n", filename);
 
 		let port = match self.pasv() {
@@ -234,8 +322,21 @@ impl FTPStream {
 		}
 	}
 
+	/// This stores a file on the server.
+	pub fn stor<R: Reader>(&mut self, filename: &str, r: &mut R) -> Result<(), String> {
+		match self.stor_(filename, r) {
+			Ok(_) => (),
+			Err(e) => return Err(e)
+		};
+
+		match self.read_response(226) {
+			Ok(_) => Ok(()),
+			Err(e) => Err(e)
+		}
+	}
+
 	//Retrieve single line response
-	fn read_response(&mut self, expected_code: int) -> Result<(int, String), String> {
+	pub fn read_response(&mut self, expected_code: int) -> Result<(int, String), String> {
 		//Carriage return
 		let cr = 0x0d;
 		//Line Feed
