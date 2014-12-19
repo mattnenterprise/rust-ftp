@@ -189,8 +189,16 @@ impl FTPStream {
 		match self.read_response(227) {
 			Ok((_, line)) => {
 				let caps = response_regex.captures(line.as_slice()).unwrap();
-				let first_part_port: int = from_str(caps.at(2)).unwrap();
-				let second_part_port: int = from_str(caps.at(3)).unwrap();
+				let caps_2 = match caps.at(2) {
+					Some(s) => s,
+					None => return Err(format!("Problems parsing reponse"))
+				};
+				let caps_3 = match caps.at(3) {
+					Some(s) => s,
+					None => return Err(format!("Problems parsing reponse"))
+				};
+				let first_part_port: int = from_str(caps_2).unwrap();
+				let second_part_port: int = from_str(caps_3).unwrap();
 				Ok((first_part_port*256)+second_part_port)
 			},
 			Err(s) => Err(s)
