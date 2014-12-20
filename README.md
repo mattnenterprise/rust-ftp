@@ -1,5 +1,6 @@
 rust-ftp
 ================
+
 FTP client for Rust
 
 [![Build Status](https://travis-ci.org/mattnenterprise/rust-ftp.svg)](https://travis-ci.org/mattnenterprise/rust-ftp)
