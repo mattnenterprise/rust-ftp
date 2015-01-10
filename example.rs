@@ -32,8 +32,8 @@ fn main() {
     };
 
     match str::from_utf8(remote_file.into_inner().as_slice()) {
-        Some(s) => print!("{}", s),
-        None => panic!("Error reading file data")
+        Ok(s) => print!("{}", s),
+        Err(e) => panic!("Error reading file data: {}", e)
     };
 
     //Store a file

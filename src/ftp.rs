@@ -1,15 +1,16 @@
 #![crate_name = "ftp"]
 #![crate_type = "lib"]
-#![feature(phase, slicing_syntax)]
+#![feature(slicing_syntax, int_uint)]
+#![allow(unstable)]
 
 extern crate regex;
-
-#[phase(plugin)] extern crate regex_macros;
 
 use std::io::{IoResult, TcpStream, BufferedReader, BufferedWriter, MemReader, EndOfFile};
 use std::result::Result;
 use std::string::String;
 use std::io::util::copy;
+use std::str::FromStr;
+use regex::Regex;
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 pub struct FTPStream {
@@ -137,7 +138,9 @@ impl FTPStream {
 				let b = begin as uint;
 				let e = end as uint;
 
-				return Ok(String::from_str(line.as_slice()[b+1..e]))
+				let s = String::from_str(line.as_slice().slice(b, e));
+				//return Ok(String::from_str(line.as_slice()[b+1..e]))
+				return Ok(s);
 			},
 			Err(e) => Err(e)
 		}
@@ -184,7 +187,10 @@ impl FTPStream {
 
 		//PASV response format : 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2).
 
-		let response_regex = regex!(r"(.*)\(\d+,\d+,\d+,\d+,(\d+),(\d+)\)(.*)");
+		let response_regex = match Regex::new(r"(.*)\(\d+,\d+,\d+,\d+,(\d+),(\d+)\)(.*)") {
+			Ok(re) => re,
+    		Err(_) => panic!("Invaid Regex!!"),
+		};
 
 		match self.read_response(227) {
 			Ok((_, line)) => {
@@ -197,8 +203,8 @@ impl FTPStream {
 					Some(s) => s,
 					None => return Err(format!("Problems parsing reponse"))
 				};
-				let first_part_port: int = from_str(caps_2).unwrap();
-				let second_part_port: int = from_str(caps_3).unwrap();
+				let first_part_port: int = FromStr::from_str(caps_2).unwrap();
+				let second_part_port: int = FromStr::from_str(caps_3).unwrap();
 				Ok((first_part_port*256)+second_part_port)
 			},
 			Err(s) => Err(s)
@@ -252,13 +258,17 @@ impl FTPStream {
 
 		let buffer: &mut Vec<u8> = &mut Vec::new();
 		loop {
-			let mut buf = [0, ..256];
+			let mut buf = [0; 256];
 			let len = match data_stream.read(&mut buf) {
             	Ok(len) => len,
             	Err(ref e) if e.kind == EndOfFile => break,
             	Err(e) => return Err(format!("{}", e)),
         	};
-        	match buffer.write(buf[..len]) {
+        	/*match buffer.write(buf[..len]) {
+        		Ok(_) => (),
+        		Err(e) => return Err(format!("{}", e))
+        	};*/
+        	match buffer.write(buf.slice(0, len)) {
         		Ok(_) => (),
         		Err(e) => return Err(format!("{}", e))
         	};
@@ -362,14 +372,14 @@ impl FTPStream {
 
 		let response = String::from_utf8(line_buffer).unwrap();
 		let chars_to_trim: &[char] = &['\r', '\n'];
-		let trimmed_response = response.as_slice().trim_chars(chars_to_trim);
+		let trimmed_response = response.as_slice().trim_matches(chars_to_trim);
     	let trimmed_response_vec: Vec<char> = trimmed_response.chars().collect();
     	if trimmed_response_vec.len() < 5 || trimmed_response_vec[3] != ' ' {
     		return Err(format!("Invalid response"));
     	}
 
     	let v: Vec<&str> = trimmed_response.splitn(1, ' ').collect();
-    	let code: int = from_str(v[0]).unwrap();
+    	let code: int = FromStr::from_str(v[0]).unwrap();
     	let message = v[1];
     	if code != expected_code {
     		return Err(format!("Invalid response: {} {}", code, message))
