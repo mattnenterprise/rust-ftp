@@ -9,8 +9,8 @@ FTP client for Rust
 
 Add ftp via your `Cargo.toml`
 ```toml
-[dependencies.ftp]
-git = "https://github.com/mattnenterprise/rust-ftp"
+[dependencies]
+ftp = "*"
 ```
 
 ### Usage
