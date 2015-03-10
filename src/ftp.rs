@@ -1,14 +1,14 @@
 #![crate_name = "ftp"]
 #![crate_type = "lib"]
-#![feature(slicing_syntax, int_uint)]
-#![allow(unstable)]
+#![feature(int_uint, old_io, core, collections, io)]
+#![allow(deprecated)]
 
 extern crate regex;
 
-use std::io::{IoResult, TcpStream, BufferedReader, BufferedWriter, MemReader, EndOfFile};
+use std::old_io::{IoResult, TcpStream, BufferedReader, BufferedWriter, MemReader, EndOfFile};
 use std::result::Result;
 use std::string::String;
-use std::io::util::copy;
+use std::old_io::util::copy;
 use std::str::FromStr;
 use regex::Regex;
 

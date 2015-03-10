@@ -1,7 +1,7 @@
 extern crate ftp;
 
 use std::str;
-use std::io::{MemReader};
+use std::old_io::{MemReader};
 use ftp::FTPStream;
 
 fn main() {
