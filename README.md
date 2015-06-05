@@ -15,14 +15,16 @@ ftp = "*"
 
 ### Usage
 ```rs
+#![feature(convert)]
+
 extern crate ftp;
 
 use std::str;
-use std::io::{MemReader};
+use std::io::Cursor;
 use ftp::FTPStream;
 
 fn main() {
-    let mut ftp_stream = match FTPStream::connect("127.0.0.1", 21) {
+	let mut ftp_stream = match FTPStream::connect("127.0.0.1", 21) {
         Ok(s) => s,
         Err(e) => panic!("{}", e)
     };
@@ -55,7 +57,7 @@ fn main() {
 
     //Store a file
     let file_data = format!("Some awesome file data man!!");
-    let reader = &mut MemReader::new(file_data.into_bytes());
+    let reader: &mut Cursor<Vec<u8>> = &mut Cursor::new(file_data.into_bytes());
     match ftp_stream.stor("my_random_file.txt", reader) {
         Ok(_) => (),
         Err(e) => panic!("{}", e)
@@ -63,6 +65,7 @@ fn main() {
 
     let _ = ftp_stream.quit();
 }
+
 ```
 
 ### License
