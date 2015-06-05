@@ -1,7 +1,9 @@
+#![feature(convert)]
+
 extern crate ftp;
 
 use std::str;
-use std::old_io::{MemReader};
+use std::io::Cursor;
 use ftp::FTPStream;
 
 fn main() {
@@ -38,7 +40,7 @@ fn main() {
 
     //Store a file
     let file_data = format!("Some awesome file data man!!");
-    let reader = &mut MemReader::new(file_data.into_bytes());
+    let reader: &mut Cursor<Vec<u8>> = &mut Cursor::new(file_data.into_bytes());
     match ftp_stream.stor("my_random_file.txt", reader) {
         Ok(_) => (),
         Err(e) => panic!("{}", e)
