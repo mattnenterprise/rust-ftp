@@ -1,7 +1,5 @@
 #![crate_name = "ftp"]
 #![crate_type = "lib"]
-#![feature(core, collections)]
-#![allow(deprecated)]
 
 extern crate regex;
 
@@ -24,7 +22,7 @@ impl FTPStream {
 	/// Creates an FTP Stream.
 	pub fn connect(host: &'static str, port: u16) -> Result<FTPStream, Error> {
 		let connect_string = format!("{}:{}", host, port);
-		let tcp_stream = try!(TcpStream::connect(connect_string.as_slice()));
+		let tcp_stream = try!(TcpStream::connect(&*connect_string));
 		let mut ftp_stream = FTPStream {
 			command_stream: tcp_stream,
 			host: host,
@@ -46,7 +44,7 @@ impl FTPStream {
 		let user_command = format!("USER {}\r\n", user);
 		let pass_command = format!("PASS {}\r\n", password);
 
-		match self.write_str(user_command.as_slice()) {
+		match self.write_str(&user_command) {
 			Ok(_) => (),
 			Err(_) => return Err(format!("Write Error"))
 		}
@@ -54,7 +52,7 @@ impl FTPStream {
 		match self.read_response(331) {
 			Ok(_) => {
 
-				match self.write_str(pass_command.as_slice()) {
+				match self.write_str(&pass_command) {
 					Ok(_) => (),
 					Err(_) => return Err(format!("Write Error"))
 				}
@@ -72,7 +70,7 @@ impl FTPStream {
 	pub fn change_dir(&mut self, path: &str) -> Result<(), String> {
 		let cwd_command = format!("CWD {}\r\n", path);
 
-		match self.write_str(cwd_command.as_slice()) {
+		match self.write_str(&cwd_command) {
 			Ok(_) => (),
 			Err(_) => return Err(format!("Write Error"))
 		}
@@ -87,7 +85,7 @@ impl FTPStream {
 	pub fn change_dir_to_parent(&mut self) -> Result<(), String> {
 		let cdup_command = format!("CDUP\r\n");
 
-		match self.write_str(cdup_command.as_slice()) {
+		match self.write_str(&cdup_command) {
 			Ok(_) => (),
 			Err(_) => return Err(format!("Write Error"))
 		}
@@ -126,15 +124,15 @@ impl FTPStream {
 		}
 		let pwd_command = format!("PWD\r\n");
 
-		match self.write_str(pwd_command.as_slice()) {
+		match self.write_str(&pwd_command) {
 			Ok(_) => (),
 			Err(e) => return Err(format!("{}", e))
 		}
 
 		match self.read_response(257) {
 			Ok((_, line)) => {
-				let begin = index_of(line.as_slice(), '"');
-				let end = last_index_of(line.as_slice(), '"');
+				let begin = index_of(&line, '"');
+				let end = last_index_of(&line, '"');
 
 				if begin == -1 || end == -1 {
 					return Err(format!("Invalid PWD Response: {}", line))
@@ -142,7 +140,7 @@ impl FTPStream {
 				let b = begin as usize;
 				let e = end as usize;
 
-				return Ok(String::from_str(&line.as_slice()[b+1..e]))
+				return Ok(line[b+1..e].to_string())
 			},
 			Err(e) => Err(e)
 		}
@@ -152,7 +150,7 @@ impl FTPStream {
 	pub fn noop(&mut self) -> Result<(), String> {
 		let noop_command = format!("NOOP\r\n");
 
-		match self.write_str(noop_command.as_slice()) {
+		match self.write_str(&noop_command) {
 			Ok(_) => (),
 			Err(_) => return Err(format!("Write Error"))
 		}
@@ -167,7 +165,7 @@ impl FTPStream {
 	pub fn make_dir(&mut self, pathname: &str) -> Result<(), String> {
 		let mkdir_command = format!("MKD {}\r\n", pathname);
 
-		match self.write_str(mkdir_command.as_slice()) {
+		match self.write_str(&mkdir_command) {
 			Ok(_) => (),
 			Err(_) => return Err(format!("Write Error"))
 		}
@@ -182,7 +180,7 @@ impl FTPStream {
 	pub fn pasv(&mut self) -> Result<(isize), String> {
 		let pasv_command = format!("PASV\r\n");
 
-		match self.write_str(pasv_command.as_slice()) {
+		match self.write_str(&pasv_command) {
 			Ok(_) => (),
 			Err(_) => return Err(format!("Write Error"))
 		}
@@ -196,7 +194,7 @@ impl FTPStream {
 
 		match self.read_response(227) {
 			Ok((_, line)) => {
-				let caps = response_regex.captures(line.as_slice()).unwrap();
+				let caps = response_regex.captures(&line).unwrap();
 				let caps_2 = match caps.at(2) {
 					Some(s) => s,
 					None => return Err(format!("Problems parsing reponse"))
@@ -217,7 +215,7 @@ impl FTPStream {
 	pub fn quit(&mut self) -> Result<(isize, String), String> {
 		let quit_command = format!("QUIT\r\n");
 
-		match self.write_str(quit_command.as_slice()) {
+		match self.write_str(&quit_command) {
 			Ok(_) => (),
 			Err(_) => return Err(format!("Write Error"))
 		}
@@ -239,9 +237,9 @@ impl FTPStream {
 		};
 
 		let connect_string = format!("{}:{}", self.host, port);
-		let data_stream = BufReader::new(TcpStream::connect(connect_string.as_slice()).unwrap());
+		let data_stream = BufReader::new(TcpStream::connect(&*connect_string).unwrap());
 
-		match self.write_str(retr_command.as_slice()) {
+		match self.write_str(&retr_command) {
 			Ok(_) => (),
 			Err(_) => return Err(format!("Write Error"))
 		}
@@ -297,7 +295,7 @@ impl FTPStream {
 	pub fn remove_dir(&mut self, pathname: &str) -> Result<(), String> {
 		let rmd_command = format!("RMD {}\r\n", pathname);
 
-		match self.write_str(rmd_command.as_slice()) {
+		match self.write_str(&rmd_command) {
 			Ok(_) => (),
 			Err(_) => return Err(format!("Write Error"))
 		}
@@ -317,9 +315,9 @@ impl FTPStream {
 		};
 
 		let connect_string = format!("{}:{}", self.host, port);
-		let data_stream: &mut BufWriter<TcpStream> = &mut BufWriter::new(TcpStream::connect(connect_string.as_slice()).unwrap());
+		let data_stream: &mut BufWriter<TcpStream> = &mut BufWriter::new(TcpStream::connect(&*connect_string).unwrap());
 
-		match self.write_str(stor_command.as_slice()) {
+		match self.write_str(&stor_command) {
 			Ok(_) => (),
 			Err(_) => return Err(format!("Write Error"))
 		}
@@ -373,7 +371,7 @@ impl FTPStream {
 
 		let response = String::from_utf8(line_buffer).unwrap();
 		let chars_to_trim: &[char] = &['\r', '\n'];
-		let trimmed_response = response.as_slice().trim_matches(chars_to_trim);
+		let trimmed_response = response.trim_matches(chars_to_trim);
     	let trimmed_response_vec: Vec<char> = trimmed_response.chars().collect();
     	if trimmed_response_vec.len() < 5 || trimmed_response_vec[3] != ' ' {
     		return Err(format!("Invalid response"));
@@ -385,6 +383,6 @@ impl FTPStream {
     	if code != expected_code {
     		return Err(format!("Invalid response: {} {}", code, message))
     	}
-    	Ok((code, String::from_str(message)))
+    	Ok((code, message.to_string()))
 	}
 }
