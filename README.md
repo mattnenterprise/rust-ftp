@@ -15,8 +15,6 @@ ftp = "*"
 
 ### Usage
 ```rs
-#![feature(convert)]
-
 extern crate ftp;
 
 use std::str;
@@ -50,7 +48,7 @@ fn main() {
         Err(e) => panic!("{}", e)
     };
 
-    match str::from_utf8(remote_file.into_inner().as_slice()) {
+    match str::from_utf8(&remote_file.into_inner()) {
         Ok(s) => print!("{}", s),
         Err(e) => panic!("Error reading file data: {}", e)
     };
