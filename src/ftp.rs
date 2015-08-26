@@ -13,14 +13,14 @@ use regex::Regex;
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 pub struct FTPStream {
 	command_stream: TcpStream,
-	pub host: &'static str,
+	pub host: String,
 	pub command_port: u16
 }
 
 impl FTPStream {
 
 	/// Creates an FTP Stream.
-	pub fn connect(host: &'static str, port: u16) -> Result<FTPStream, Error> {
+	pub fn connect(host: String, port: u16) -> Result<FTPStream, Error> {
 		let connect_string = format!("{}:{}", host, port);
 		let tcp_stream = try!(TcpStream::connect(&*connect_string));
 		let mut ftp_stream = FTPStream {

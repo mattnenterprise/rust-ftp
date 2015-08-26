@@ -5,7 +5,7 @@ use std::io::Cursor;
 use ftp::FTPStream;
 
 fn main() {
-	let mut ftp_stream = match FTPStream::connect("127.0.0.1", 21) {
+	let mut ftp_stream = match FTPStream::connect("127.0.0.1".to_string(), 21) {
         Ok(s) => s,
         Err(e) => panic!("{}", e)
     };
