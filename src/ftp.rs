@@ -11,6 +11,7 @@ use std::str::FromStr;
 use regex::Regex;
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
+#[derive(Debug)]
 pub struct FTPStream {
 	command_stream: TcpStream,
 	pub host: String,
