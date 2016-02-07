@@ -11,6 +11,7 @@ use std::str::FromStr;
 use regex::Regex;
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
+#[derive(Debug)]
 pub struct FTPStream {
 	command_stream: TcpStream,
 	pub host: String,
@@ -20,12 +21,13 @@ pub struct FTPStream {
 impl FTPStream {
 
 	/// Creates an FTP Stream.
-	pub fn connect(host: String, port: u16) -> Result<FTPStream, Error> {
-		let connect_string = format!("{}:{}", host, port);
+	pub fn connect<S: Into<String>>(host: S, port: u16) -> Result<FTPStream, Error> {
+        let host_string = host.into();
+		let connect_string = format!("{}:{}", host_string, port);
 		let tcp_stream = try!(TcpStream::connect(&*connect_string));
 		let mut ftp_stream = FTPStream {
 			command_stream: tcp_stream,
-			host: host,
+			host: host_string,
 			command_port: port
 		};
 		match ftp_stream.read_response(220) {
