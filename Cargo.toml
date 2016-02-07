@@ -14,7 +14,3 @@ regex = "*"
 [lib]
 name ="ftp"
 path = "src/ftp.rs"
-
-[[bin]]
-name = "example"
-path = "example.rs"
