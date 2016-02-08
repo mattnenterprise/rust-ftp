@@ -1,9 +1,26 @@
 #![crate_name = "ftp"]
 #![crate_type = "lib"]
 
+//! ftp is an FTP client written in Rust.
+//!
+//! ### Usage
+//!
+//! Here is a basic usage:
+//!
+//! ```rust
+//! use ftp::FtpStream;
+//! let mut ftp_stream = match FtpStream::connect("127.0.0.1", 21) {
+//!   Ok(s) => s,
+//!   Err(e) => panic!("{}", e)
+//! };
+//! let _ = ftp_stream.quit();
+//! ```
+//!
+
+
 extern crate regex;
 
-use std::io::{Error, ErrorKind, Read, BufReader, BufWriter , Cursor, Write, copy};
+use std::io::{Error, ErrorKind, Read, BufRead, BufReader, BufWriter, Cursor, Write, copy};
 use std::net::TcpStream;
 use std::result::Result;
 use std::string::String;
@@ -12,21 +29,21 @@ use regex::Regex;
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 #[derive(Debug)]
-pub struct FTPStream {
-	command_stream: TcpStream,
+pub struct FtpStream {
+	reader: BufReader<TcpStream>,
 	pub host: String,
 	pub command_port: u16
 }
 
-impl FTPStream {
+impl FtpStream {
 
 	/// Creates an FTP Stream.
-	pub fn connect<S: Into<String>>(host: S, port: u16) -> Result<FTPStream, Error> {
+	pub fn connect<S: Into<String>>(host: S, port: u16) -> Result<FtpStream, Error> {
         let host_string = host.into();
 		let connect_string = format!("{}:{}", host_string, port);
-		let tcp_stream = try!(TcpStream::connect(&*connect_string));
-		let mut ftp_stream = FTPStream {
-			command_stream: tcp_stream,
+		let reader = BufReader::new(try!(TcpStream::connect(&*connect_string)));
+		let mut ftp_stream = FtpStream {
+			reader: reader,
 			host: host_string,
 			command_port: port
 		};
@@ -38,7 +55,8 @@ impl FTPStream {
 	}
 
 	fn write_str(&mut self, s: &str) -> Result<(), Error> {
-		return self.command_stream.write_fmt(format_args!("{}", s));
+		let stream = self.reader.get_mut();
+		return stream.write_fmt(format_args!("{}", s));
 	}
 
 	/// Log in to the FTP server.
@@ -356,35 +374,28 @@ impl FTPStream {
 
 	//Retrieve single line response
 	pub fn read_response(&mut self, expected_code: isize) -> Result<(isize, String), String> {
-		//Carriage return
-		let cr = 0x0d;
-		//Line Feed
-		let lf = 0x0a;
-		let mut line_buffer: Vec<u8> = Vec::new();
-
-		while line_buffer.len() < 2 || (line_buffer[line_buffer.len()-1] != lf && line_buffer[line_buffer.len()-2] != cr) {
-				let byte_buffer: &mut [u8] = &mut [0];
-				match self.command_stream.read(byte_buffer) {
-					Ok(_) => {},
-					Err(_) => return Err(format!("Error reading response")),
-				}
-				line_buffer.push(byte_buffer[0]);
+		let mut line = String::new();
+		let _ = self.reader.read_line(&mut line);
+		if line.len() < 5 {
+			return Err("error: could not read reply code".to_owned());
 		}
-
-		let response = String::from_utf8(line_buffer).unwrap();
-		let chars_to_trim: &[char] = &['\r', '\n'];
-		let trimmed_response = response.trim_matches(chars_to_trim);
-    	let trimmed_response_vec: Vec<char> = trimmed_response.chars().collect();
-    	if trimmed_response_vec.len() < 5 || trimmed_response_vec[3] != ' ' {
-    		return Err(format!("Invalid response"));
+		
+		let code: u32 = try!(line[0 .. 3].parse().or_else(|err|
+			Err(format!("error: could not parse reply code: {}", err))
+		));
+		
+		// multiple line reply
+		// loop while the line does not begin with the code and a space
+		let expected = format!("{} ", &line[0 .. 3]);
+		while line.len() < 5 || line[0 .. 4] != expected {
+			line.clear();
+			let _ = self.reader.read_line(&mut line);
+		}
+		
+    	if code as isize == expected_code {
+			Ok((code as isize, line))
+    	} else {
+    		return Err(format!("Invalid response: {} {}", code, line))
     	}
-
-    	let v: Vec<&str> = trimmed_response.splitn(2, ' ').collect();
-    	let code: isize = FromStr::from_str(v[0]).unwrap();
-    	let message = v[1];
-    	if code != expected_code {
-    		return Err(format!("Invalid response: {} {}", code, message))
-    	}
-    	Ok((code, message.to_string()))
 	}
 }
