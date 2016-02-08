@@ -30,7 +30,7 @@ use regex::Regex;
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 #[derive(Debug)]
 pub struct FtpStream {
-	command_stream: TcpStream,
+	reader: BufReader<TcpStream>,
 	pub host: String,
 	pub command_port: u16
 }
@@ -41,9 +41,9 @@ impl FtpStream {
 	pub fn connect<S: Into<String>>(host: S, port: u16) -> Result<FtpStream, Error> {
         let host_string = host.into();
 		let connect_string = format!("{}:{}", host_string, port);
-		let tcp_stream = try!(TcpStream::connect(&*connect_string));
+		let reader = BufReader::new(try!(TcpStream::connect(&*connect_string)));
 		let mut ftp_stream = FtpStream {
-			command_stream: tcp_stream,
+			reader: reader,
 			host: host_string,
 			command_port: port
 		};
@@ -55,7 +55,8 @@ impl FtpStream {
 	}
 
 	fn write_str(&mut self, s: &str) -> Result<(), Error> {
-		return self.command_stream.write_fmt(format_args!("{}", s));
+		let stream = self.reader.get_mut();
+		return stream.write_fmt(format_args!("{}", s));
 	}
 
 	/// Log in to the FTP server.
@@ -374,8 +375,7 @@ impl FtpStream {
 	//Retrieve single line response
 	pub fn read_response(&mut self, expected_code: isize) -> Result<(isize, String), String> {
 		let mut line = String::new();
-		let mut reader = BufReader::new(&self.command_stream);
-		let _ = reader.read_line(&mut line);
+		let _ = self.reader.read_line(&mut line);
 		if line.len() < 5 {
 			return Err("error: could not read reply code".to_owned());
 		}
@@ -389,7 +389,7 @@ impl FtpStream {
 		let expected = format!("{} ", &line[0 .. 3]);
 		while line.len() < 5 || line[0 .. 4] != expected {
 			line.clear();
-			let _ = reader.read_line(&mut line);
+			let _ = self.reader.read_line(&mut line);
 		}
 		
     	if code as isize == expected_code {
