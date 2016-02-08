@@ -1,6 +1,23 @@
 #![crate_name = "ftp"]
 #![crate_type = "lib"]
 
+//! ftp is an FTP client written in Rust.
+//!
+//! ### Usage
+//!
+//! Here is a basic usage:
+//!
+//! ```rust
+//! use ftp::FtpStream;
+//! let mut ftp_stream = match FtpStream::connect("127.0.0.1", 21) {
+//!   Ok(s) => s,
+//!   Err(e) => panic!("{}", e)
+//! };
+//! let _ = ftp_stream.quit();
+//! ```
+//!
+
+
 extern crate regex;
 
 use std::io::{Error, ErrorKind, Read, BufReader, BufWriter , Cursor, Write, copy};
@@ -12,20 +29,20 @@ use regex::Regex;
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 #[derive(Debug)]
-pub struct FTPStream {
+pub struct FtpStream {
 	command_stream: TcpStream,
 	pub host: String,
 	pub command_port: u16
 }
 
-impl FTPStream {
+impl FtpStream {
 
 	/// Creates an FTP Stream.
-	pub fn connect<S: Into<String>>(host: S, port: u16) -> Result<FTPStream, Error> {
+	pub fn connect<S: Into<String>>(host: S, port: u16) -> Result<FtpStream, Error> {
         let host_string = host.into();
 		let connect_string = format!("{}:{}", host_string, port);
 		let tcp_stream = try!(TcpStream::connect(&*connect_string));
-		let mut ftp_stream = FTPStream {
+		let mut ftp_stream = FtpStream {
 			command_stream: tcp_stream,
 			host: host_string,
 			command_port: port
