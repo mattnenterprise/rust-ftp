@@ -20,6 +20,11 @@ fn main() {
         Err(e) => panic!("{}", e)
     }
 
+    match ftp_stream.list(Some("test_data")) {
+        Ok(output) => println!("{}", output),
+        Err(e) => panic!("{}", e)
+    }
+
     match ftp_stream.change_dir("test_data") {
         Ok(_) => (),
         Err(e) => panic!("{}", e)
