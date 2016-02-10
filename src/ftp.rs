@@ -196,7 +196,7 @@ impl FtpStream {
     }
 
     /// Runs the PASV command.
-    pub fn pasv(&mut self) -> Result<(isize), String> {
+    pub fn pasv(&mut self) -> Result<(u16), String> {
         let pasv_command = format!("PASV\r\n");
 
         match self.write_str(&pasv_command) {
@@ -222,8 +222,8 @@ impl FtpStream {
                     Some(s) => s,
                     None => return Err(format!("Problems parsing reponse")),
                 };
-                let first_part_port: isize = FromStr::from_str(caps_2).unwrap();
-                let second_part_port: isize = FromStr::from_str(caps_3).unwrap();
+                let first_part_port: u16 = FromStr::from_str(caps_2).unwrap();
+                let second_part_port: u16 = FromStr::from_str(caps_3).unwrap();
                 Ok((first_part_port * 256) + second_part_port)
             }
             Err(s) => Err(s),
