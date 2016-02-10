@@ -231,7 +231,7 @@ impl FtpStream {
     }
 
     /// Quits the current FTP session.
-    pub fn quit(&mut self) -> Result<(isize, String), String> {
+    pub fn quit(&mut self) -> Result<(u32, String), String> {
         let quit_command = format!("QUIT\r\n");
 
         match self.write_str(&quit_command) {
@@ -373,8 +373,8 @@ impl FtpStream {
         }
     }
 
-    // Retrieve single line response
-    pub fn read_response(&mut self, expected_code: isize) -> Result<(isize, String), String> {
+    /// Retrieve single line response
+    pub fn read_response(&mut self, expected_code: u32) -> Result<(u32, String), String> {
         let mut line = String::new();
         let _ = self.reader.read_line(&mut line);
         if line.len() < 5 {
@@ -393,8 +393,8 @@ impl FtpStream {
             let _ = self.reader.read_line(&mut line);
         }
 
-        if code as isize == expected_code {
-            Ok((code as isize, line))
+        if code == expected_code {
+            Ok((code, line))
         } else {
             return Err(format!("Invalid response: {} {}", code, line));
         }
