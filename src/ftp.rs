@@ -373,6 +373,47 @@ impl FtpStream {
         }
     }
 
+    pub fn list(&mut self, path: Option<&str>) -> Result<String, String> {
+
+        let mut list_command = String::from("LIST");
+        if let Some(path) = path {
+            list_command.push(' ');
+            list_command.push_str(path);
+        }
+        list_command.push_str("\r\n");
+
+        let port = match self.pasv() {
+            Ok(p) => p,
+            Err(e) => return Err(e),
+        };
+
+        let connect_string = format!("{}:{}", self.host, port);
+        let mut data_stream = BufReader::new(TcpStream::connect(&*connect_string).unwrap());
+
+        match self.write_str(&list_command) {
+            Ok(_) => (),
+            Err(_) => return Err(format!("Write Error")),
+        }
+
+        let mut output = String::new();
+        match self.read_response(150) {
+            Ok(_) => {
+                match data_stream.read_to_string(&mut output) {
+                    Ok(_) => {
+                        drop(data_stream);
+                    }
+                    Err(_) => ()
+                }
+            }
+            Err(e) => return Err(e),
+        }
+
+        match self.read_response(226) {
+            Ok(_) => Ok(output),
+            Err(e) => Err(e),
+        }
+    }
+
     // Retrieve single line response
     pub fn read_response(&mut self, expected_code: isize) -> Result<(isize, String), String> {
         let mut line = String::new();
