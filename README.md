@@ -19,10 +19,10 @@ extern crate ftp;
 
 use std::str;
 use std::io::Cursor;
-use ftp::FTPStream;
+use ftp::FtpStream;
 
 fn main() {
-	let mut ftp_stream = match FTPStream::connect("127.0.0.1", 21) {
+	let mut ftp_stream = match FtpStream::connect("127.0.0.1", 21) {
         Ok(s) => s,
         Err(e) => panic!("{}", e)
     };
