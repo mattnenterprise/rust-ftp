@@ -1,48 +1,35 @@
 extern crate ftp;
 
 use std::str;
-use std::io::Cursor;
+use std::io::{Cursor, Error, ErrorKind, Result};
 use ftp::FtpStream;
 
-fn main() {
-	let mut ftp_stream = match FtpStream::connect("127.0.0.1", 21) {
-        Ok(s) => s,
-        Err(e) => panic!("{}", e)
-    };
+fn test_ftp(addr: &str, user: &str, pass: &str) -> Result<()> {
+    let mut ftp_stream = try!(FtpStream::connect(addr, 21));
+    try!(ftp_stream.login(user, pass));
+    println!("current dir: {}", try!(ftp_stream.current_dir()));
 
-    match ftp_stream.login("username", "password") {
-        Ok(_) => (),
-        Err(e) => panic!("{}", e)
-    }
+    try!(ftp_stream.change_dir("test_data"));
 
-    match ftp_stream.current_dir() {
-        Ok(dir) => println!("{}", dir),
-        Err(e) => panic!("{}", e)
-    }
+    // An easy way to retrieve a file
+    let cursor = try!(ftp_stream.simple_retr("ftpext-charter.txt"));
+    let vec = cursor.into_inner();
+    let text = try!(str::from_utf8(&vec).or_else(|cause|
+        Err(Error::new(ErrorKind::Other, cause))
+    ));
+    println!("got data: {}", text);
 
-    match ftp_stream.change_dir("test_data") {
-        Ok(_) => (),
-        Err(e) => panic!("{}", e)
-    }
-
-    //An easy way to retreive a file
-    let remote_file = match ftp_stream.simple_retr("ftpext-charter.txt") {
-        Ok(file) => file,
-        Err(e) => panic!("{}", e)
-    };
-
-    match str::from_utf8(&remote_file.into_inner()) {
-        Ok(s) => print!("{}", s),
-        Err(e) => panic!("Error reading file data: {}", e)
-    };
-
-    //Store a file
+    // Store a file
     let file_data = format!("Some awesome file data man!!");
-    let reader: &mut Cursor<Vec<u8>> = &mut Cursor::new(file_data.into_bytes());
-    match ftp_stream.stor("my_random_file.txt", reader) {
-        Ok(_) => (),
-        Err(e) => panic!("{}", e)
-    }
+    let mut reader = Cursor::new(file_data.into_bytes());
+    try!(ftp_stream.stor("my_random_file.txt", &mut reader));
 
-    let _ = ftp_stream.quit();
+    ftp_stream.quit()
+}
+
+fn main() {
+    test_ftp("127.0.0.1", "Doe", "mumble").unwrap_or_else(|err|
+        panic!("{}", err)
+    );
+    println!("test successful")
 }
