@@ -66,10 +66,6 @@ fn main() {
 
 ```
 
-### License
-
-MIT
-
 ## License
 
 Licensed under either of
