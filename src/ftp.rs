@@ -233,6 +233,26 @@ impl FtpStream {
         Ok(())
     }
 
+
+    /// This stores a file on the server.
+    pub fn put<F>(&mut self, filename: &str, mut source: F) -> Result<()>
+        where F: FnMut(&mut BufWriter<TcpStream>) -> ()
+    {
+        let port = try!(self.pasv());
+
+        let connect_string = format!("{}:{}", self.host, port);
+        let mut data_stream = BufWriter::new(TcpStream::connect(&*connect_string).unwrap());
+
+        let stor_command = format!("STOR {}\r\n", filename);
+        try!(self.write_str(&stor_command));
+        try!(self.read_response(150));
+
+        source(&mut data_stream);
+
+        try!(self.read_response(226));
+        Ok(())
+    }
+
     fn stor_<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         let stor_command = format!("STOR {}\r\n", filename);
         let port = try!(self.pasv());
@@ -260,11 +280,12 @@ impl FtpStream {
         let mut line = String::new();
         try!(self.reader.read_line(&mut line));
         if line.len() < 5 {
-            return Err(Error::new(ErrorKind::Other, "error: could not read reply code".to_owned()))
+            return Err(Error::new(ErrorKind::Other, "error: could not read reply code"));
         }
 
         let code: u32 = try!(line[0..3].parse().or_else(|err| {
-            Err(Error::new(ErrorKind::Other, format!("error: could not parse reply code: {}", err)))
+            Err(Error::new(ErrorKind::Other,
+                           format!("error: could not parse reply code: {}", err)))
         }));
 
         // multiple line reply
@@ -278,7 +299,8 @@ impl FtpStream {
         if code == expected_code {
             Ok((code, line))
         } else {
-            Err(Error::new(ErrorKind::Other, format!("Invalid response: {} {}", code, line)))
+            Err(Error::new(ErrorKind::Other,
+                           format!("Invalid response: {} {}", code, line)))
         }
     }
 }
