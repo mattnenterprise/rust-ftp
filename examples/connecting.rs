@@ -7,9 +7,9 @@ use ftp::FtpStream;
 fn test_ftp(addr: &str, user: &str, pass: &str) -> Result<()> {
     let mut ftp_stream = try!(FtpStream::connect(addr, 21));
     try!(ftp_stream.login(user, pass));
-    println!("current dir: {}", try!(ftp_stream.current_dir()));
+    println!("current dir: {}", try!(ftp_stream.pwd()));
 
-    try!(ftp_stream.change_dir("test_data"));
+    try!(ftp_stream.cwd("test_data"));
 
     // An easy way to retrieve a file
     let cursor = try!(ftp_stream.simple_retr("ftpext-charter.txt"));
@@ -22,7 +22,7 @@ fn test_ftp(addr: &str, user: &str, pass: &str) -> Result<()> {
     // Store a file
     let file_data = format!("Some awesome file data man!!");
     let mut reader = Cursor::new(file_data.into_bytes());
-    try!(ftp_stream.stor("my_random_file.txt", &mut reader));
+    try!(ftp_stream.put("my_random_file.txt", &mut reader));
 
     ftp_stream.quit()
 }

@@ -68,7 +68,7 @@ impl FtpStream {
     }
 
     /// Change the current directory to the path specified.
-    pub fn change_dir(&mut self, path: &str) -> Result<()> {
+    pub fn cwd(&mut self, path: &str) -> Result<()> {
         let cwd_command = format!("CWD {}\r\n", path);
 
         try!(self.write_str(&cwd_command));
@@ -77,7 +77,7 @@ impl FtpStream {
     }
 
     /// Move the current directory to the parent directory.
-    pub fn change_dir_to_parent(&mut self) -> Result<()> {
+    pub fn cdup(&mut self) -> Result<()> {
         let cdup_command = format!("CDUP\r\n");
 
         try!(self.write_str(&cdup_command));
@@ -86,7 +86,7 @@ impl FtpStream {
     }
 
     /// Gets the current directory
-    pub fn current_dir(&mut self) -> Result<String> {
+    pub fn pwd(&mut self) -> Result<String> {
         fn index_of(string: &str, ch: char) -> isize {
             let mut i = -1;
             let mut index = 0;
@@ -138,8 +138,8 @@ impl FtpStream {
         Ok(())
     }
 
-    /// This creates new directories on the server.
-    pub fn make_dir(&mut self, pathname: &str) -> Result<()> {
+    /// This creates a new directory on the server.
+    pub fn mkdir(&mut self, pathname: &str) -> Result<()> {
         let mkdir_command = format!("MKD {}\r\n", pathname);
         try!(self.write_str(&mkdir_command));
         try!(self.read_response(257));
@@ -186,7 +186,7 @@ impl FtpStream {
     /// This method is a more complicated way to retrieve a file.
     /// The reader returned should be dropped.
     /// Also you will have to read the response to make sure it has the correct value.
-    pub fn retr(&mut self, file_name: &str) -> Result<BufReader<TcpStream>> {
+    pub fn get(&mut self, file_name: &str) -> Result<BufReader<TcpStream>> {
         let retr_command = format!("RETR {}\r\n", file_name);
         let port = try!(self.pasv());
 
@@ -198,7 +198,7 @@ impl FtpStream {
     }
 
     fn simple_retr_(&mut self, file_name: &str) -> Result<Cursor<Vec<u8>>> {
-        let mut data_stream = match self.retr(file_name) {
+        let mut data_stream = match self.get(file_name) {
             Ok(s) => s,
             Err(e) => return Err(e),
         };
@@ -226,14 +226,14 @@ impl FtpStream {
     }
 
     /// Removes the remote pathname from the server.
-    pub fn remove_dir(&mut self, pathname: &str) -> Result<()> {
+    pub fn rmdir(&mut self, pathname: &str) -> Result<()> {
         let rmd_command = format!("RMD {}\r\n", pathname);
         try!(self.write_str(&rmd_command));
         try!(self.read_response(250));
         Ok(())
     }
 
-    fn stor_<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
+    fn put_file<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         let stor_command = format!("STOR {}\r\n", filename);
         let port = try!(self.pasv());
 
@@ -249,8 +249,8 @@ impl FtpStream {
     }
 
     /// This stores a file on the server.
-    pub fn stor<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
-        try!(self.stor_(filename, r));
+    pub fn put<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
+        try!(self.put_file(filename, r));
         try!(self.read_response(226));
         Ok(())
     }
