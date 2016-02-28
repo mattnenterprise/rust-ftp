@@ -79,46 +79,15 @@ impl FtpStream {
 
     /// Gets the current directory
     pub fn pwd(&mut self) -> Result<String> {
-        fn index_of(string: &str, ch: char) -> isize {
-            let mut i = -1;
-            let mut index = 0;
-            for c in string.chars() {
-                if c == ch {
-                    i = index;
-                    return i;
-                }
-                index += 1;
-            }
-            return i;
-        }
-
-        fn last_index_of(string: &str, ch: char) -> isize {
-            let mut i = -1;
-            let mut index = 0;
-            for c in string.chars() {
-                if c == ch {
-                    i = index;
-                }
-                index += 1;
-            }
-            return i;
-        }
-
-        let pwd_command = format!("PWD\r\n");
-
-        try!(self.write_str(&pwd_command));
+        try!(self.write_str("PWD\r\n"));
         self.read_response(status::PATH_CREATED).and_then(|(_, line)| {
-            let begin = index_of(&line, '"');
-            let end = last_index_of(&line, '"');
-
-            if begin == -1 || end == -1 {
-                let cause = format!("Invalid PWD Response: {}", line);
-                return Err(Error::new(ErrorKind::Other, cause));
+            match (line.find('"'), line.rfind('"')) {
+                (Some(begin), Some(end)) if begin < end => Ok(line[begin + 1 .. end].to_string()),
+                _ => {
+                    let cause = format!("Invalid PWD Response: {}", line);
+                    Err(Error::new(ErrorKind::Other, cause))
+                }
             }
-            let b = begin as usize;
-            let e = end as usize;
-
-            return Ok(line[b + 1..e].to_string());
         })
     }
 
