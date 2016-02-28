@@ -9,40 +9,30 @@
 //!
 //! ```rust
 //! use ftp::FtpStream;
-//! let mut ftp_stream = FtpStream::connect("127.0.0.1", 21).unwrap_or_else(|err|
+//! let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap_or_else(|err|
 //!     panic!("{}", err)
 //! );
 //! let _ = ftp_stream.quit();
 //! ```
 //!
 
-
-extern crate regex;
-
 use std::io::{Error, ErrorKind, Read, Result, BufRead, BufReader, BufWriter, Cursor, Write, copy};
 use std::net::TcpStream;
 use std::string::String;
-use std::str::FromStr;
-use regex::Regex;
+use std::net::ToSocketAddrs;
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 #[derive(Debug)]
 pub struct FtpStream {
-    reader: BufReader<TcpStream>,
-    pub host: String,
-    pub command_port: u16,
+    reader: BufReader<TcpStream>
 }
 
 impl FtpStream {
     /// Creates an FTP Stream.
-    pub fn connect<S: Into<String>>(host: S, port: u16) -> Result<FtpStream> {
-        let host_string = host.into();
-        let connect_string = format!("{}:{}", host_string, port);
-        let reader = BufReader::new(try!(TcpStream::connect(&*connect_string)));
+    pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
+        let reader = BufReader::new(try!(TcpStream::connect(addr)));
         let mut ftp_stream = FtpStream {
-            reader: reader,
-            host: host_string,
-            command_port: port,
+            reader: reader
         };
 
         try!(ftp_stream.read_response(220));
@@ -147,30 +137,24 @@ impl FtpStream {
     }
 
     /// Runs the PASV command.
-    pub fn pasv(&mut self) -> Result<u16> {
-        let pasv_command = format!("PASV\r\n");
-        try!(self.write_str(&pasv_command));
+    fn pasv(&mut self) -> Result<TcpStream> {
+        try!(self.write_str("PASV\r\n"));
 
         // PASV response format : 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2).
-
-        let response_regex = match Regex::new(r"(.*)\(\d+,\d+,\d+,\d+,(\d+),(\d+)\)(.*)") {
-            Ok(re) => re,
-            Err(_) => panic!("Invaid Regex!!"),
-        };
-
         self.read_response(227).and_then(|(_, line)| {
-            let caps = response_regex.captures(&line).unwrap();
-            let caps_2 = match caps.at(2) {
-                Some(s) => s,
-                None => return Err(Error::new(ErrorKind::Other, "Problems parsing reponse")),
-            };
-            let caps_3 = match caps.at(3) {
-                Some(s) => s,
-                None => return Err(Error::new(ErrorKind::Other, "Problems parsing reponse")),
-            };
-            let first_part_port: u16 = FromStr::from_str(caps_2).unwrap();
-            let second_part_port: u16 = FromStr::from_str(caps_3).unwrap();
-            Ok((first_part_port * 256) + second_part_port)
+            let vec = line.split(",").collect::<Vec<_>>();
+            if vec.len() != 6 {
+                return Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)));
+            }
+
+            match (vec[4].parse::<u8>(), vec[5].parse::<u8>()) {
+                (Ok(msb), Ok(lsb)) => {
+                    let port = ((msb as u16) << 8) + lsb as u16;
+                    let addr = format!("{}.{}.{}.{}:{}", vec[0], vec[1], vec[2], vec[3], port);
+                    TcpStream::connect(&*addr)
+                },
+                _ => Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)))
+            }
         })
     }
 
@@ -188,10 +172,7 @@ impl FtpStream {
     /// Also you will have to read the response to make sure it has the correct value.
     pub fn retr(&mut self, file_name: &str) -> Result<BufReader<TcpStream>> {
         let retr_command = format!("RETR {}\r\n", file_name);
-        let port = try!(self.pasv());
-
-        let connect_string = format!("{}:{}", self.host, port);
-        let data_stream = BufReader::new(TcpStream::connect(&*connect_string).unwrap());
+        let data_stream = BufReader::new(try!(self.pasv()));
 
         try!(self.write_str(&retr_command));
         self.read_response(150).and_then(|_| Ok(data_stream))
@@ -235,16 +216,12 @@ impl FtpStream {
 
     fn stor_<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         let stor_command = format!("STOR {}\r\n", filename);
-        let port = try!(self.pasv());
-
-        let connect_string = format!("{}:{}", self.host, port);
-        let data_stream: &mut BufWriter<TcpStream> =
-            &mut BufWriter::new(TcpStream::connect(&*connect_string).unwrap());
+        let mut data_stream = BufWriter::new(try!(self.pasv()));
 
         try!(self.write_str(&stor_command));
         try!(self.read_response(150));
 
-        try!(copy(r, data_stream));
+        try!(copy(r, &mut data_stream));
         Ok(())
     }
 
