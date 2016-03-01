@@ -5,7 +5,7 @@ use std::io::{Cursor, Error, ErrorKind, Result};
 use ftp::FtpStream;
 
 fn test_ftp(addr: &str, user: &str, pass: &str) -> Result<()> {
-    let mut ftp_stream = try!(FtpStream::connect(addr, 21));
+    let mut ftp_stream = try!(FtpStream::connect((addr, 21)));
     try!(ftp_stream.login(user, pass));
     println!("current dir: {}", try!(ftp_stream.pwd()));
 

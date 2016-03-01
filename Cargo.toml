@@ -8,9 +8,6 @@ description = "FTP client for Rust"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 
-[dependencies]
-regex = "*"
-
 [lib]
 name ="ftp"
 path = "src/ftp.rs"
