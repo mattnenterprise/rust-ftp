@@ -242,7 +242,7 @@ impl FtpStream {
             &mut BufWriter::new(TcpStream::connect(&*connect_string).unwrap());
 
         try!(self.write_str(&stor_command));
-        try!(self.read_response(150));
+        try!(self.read_response_in(&[150, 125]));
 
         try!(copy(r, data_stream));
         Ok(())
@@ -255,8 +255,12 @@ impl FtpStream {
         Ok(())
     }
 
-    /// Retrieve single line response
     pub fn read_response(&mut self, expected_code: u32) -> Result<(u32, String)> {
+        self.read_response_in(&[expected_code])
+    }
+
+    /// Retrieve single line response
+    pub fn read_response_in(&mut self, expected_code: &[u32]) -> Result<(u32, String)> {
         let mut line = String::new();
         try!(self.reader.read_line(&mut line));
         if line.len() < 5 {
@@ -275,7 +279,7 @@ impl FtpStream {
             try!(self.reader.read_line(&mut line));
         }
 
-        if code == expected_code {
+        if expected_code.into_iter().any(|ec| code == *ec) {
             Ok((code, line))
         } else {
             Err(Error::new(ErrorKind::Other, format!("Invalid response: {} {}", code, line)))
