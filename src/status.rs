@@ -19,7 +19,7 @@ pub const DATA_CONNECTION_OPEN: u32        = 225;
 pub const CLOSING_DATA_CONNECTION: u32     = 226;
 pub const PASSIVE_MODE: u32                = 227;
 pub const LONG_PASSIVE_MODE: u32           = 228;
-pub const EETENDED_PASSIVE_MODE: u32       = 229;
+pub const EXTENDED_PASSIVE_MODE: u32       = 229;
 pub const LOGGED_IN: u32                   = 230;
 pub const LOGGED_OUT: u32                  = 231;
 pub const LOGOUT_ACK: u32                  = 232;
@@ -27,7 +27,7 @@ pub const REQUESTED_FILE_ACTION_OK: u32    = 250;
 pub const PATH_CREATED: u32                = 257;
 
 // 3xx: Positive intermediate Reply
-pub const USER_OK: u32                     = 331;
+pub const NEED_PASSWORD: u32               = 331;
 pub const LOGIN_NEED_ACCOUNT: u32          = 332;
 pub const REQUEST_FILE_PENDING: u32        = 350;
 
