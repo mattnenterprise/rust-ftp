@@ -1,58 +1,55 @@
-pub mod status {
+// 1xx: Positive Preliminary Reply
+pub const INITIATING: u32                  = 100;
+pub const RESTART_MARKER: u32              = 110;
+pub const READY_MINUTE: u32                = 120;
+pub const ALREADY_OPEN: u32                = 125;
+pub const ABOUT_TO_SEND: u32               = 150;
 
-    // 1xx: Positive Preliminary Reply
-    pub static STATUS_INITIATING: int                  = 100;
-    pub static STATUS_RESTART_MARKER: int              = 110;
-    pub static STATUS_READY_MINUTE: int                = 120;
-    pub static STATUS_ALREADY_OPEN: int                = 125;
-    pub static STATUS_ABOUT_TO_SEND: int               = 150;
+// 2xx: Positive Completion Reply
+pub const COMMAND_OK: u32                  = 200;
+pub const COMMAND_NOT_IMPLEMENTED: u32     = 202;
+pub const SYSTEM: u32                      = 211;
+pub const DIRECTORY: u32                   = 212;
+pub const FILE: u32                        = 213;
+pub const HELP: u32                        = 214;
+pub const NAME: u32                        = 215;
+pub const READY: u32                       = 220;
+pub const CLOSING: u32                     = 221;
+pub const DATA_CONNECTION_OPEN: u32        = 225;
+pub const CLOSING_DATA_CONNECTION: u32     = 226;
+pub const PASSIVE_MODE: u32                = 227;
+pub const LONG_PASSIVE_MODE: u32           = 228;
+pub const EETENDED_PASSIVE_MODE: u32       = 229;
+pub const LOGGED_IN: u32                   = 230;
+pub const LOGGED_OUT: u32                  = 231;
+pub const LOGOUT_ACK: u32                  = 232;
+pub const REQUESTED_FILE_ACTION_OK: u32    = 250;
+pub const PATH_CREATED: u32                = 257;
 
-    // 2xx: Positive Completion Reply
-    pub static STATUS_COMMAND_OK: int                  = 200;
-    pub static STATUS_COMMAND_NOT_IMPLEMENTED: int     = 202;
-    pub static STATUS_SYSTEM: int                      = 211;
-    pub static STATUS_DIRECTORY: int                   = 212;
-    pub static STATUS_FILE: int                        = 213;
-    pub static STATUS_HELP: int                        = 214;
-    pub static STATUS_NAME: int                        = 215;
-    pub static STATUS_READY: int                       = 220;
-    pub static STATUS_CLOSING: int                     = 221;
-    pub static STATUS_DATA_CONNECTION_OPEN: int        = 225;
-    pub static STATUS_CLOSING_DATA_CONNECTION: int     = 226;
-    pub static STATUS_PASSIVE_MODE: int                = 227;
-    pub static STATUS_LONG_PASSIVE_MODE: int           = 228;
-    pub static STATUS_EETENDED_PASSIVE_MODE: int       = 229;
-    pub static STATUS_LOGGED_IN: int                   = 230;
-    pub static STATUS_LOGGED_OUT: int                  = 231;
-    pub static STATUS_LOGOUT_ACK: int                  = 232;
-    pub static STATUS_REQUESTED_FILE_ACTION_OK: int    = 250;
-    pub static STATUS_PATH_CREATED: int                = 257;
+// 3xx: Positive intermediate Reply
+pub const USER_OK: u32                     = 331;
+pub const LOGIN_NEED_ACCOUNT: u32          = 332;
+pub const REQUEST_FILE_PENDING: u32        = 350;
 
-    // 3xx: Positive Intermediate Reply
-    pub static STATUS_USER_OK: int                     = 331;
-    pub static STATUS_LOGIN_NEED_ACCOUNT: int          = 332;
-    pub static STATUS_REQUEST_FILE_PENDING: int        = 350;
+// 4xx: Transient Negative Completion Reply
+pub const NOT_AVAILABLE: u32               = 421;
+pub const CANNOT_OPEN_DATA_CONNECTION: u32 = 425;
+pub const TRANSER_ABORTED: u32             = 426;
+pub const INVALID_CREDENTIALS: u32         = 430;
+pub const HOST_UNAVAILABLE: u32            = 434;
+pub const REQUEST_FILE_ACTION_IGNORED: u32 = 450;
+pub const ACTION_ABORTED: u32              = 451;
+pub const REQUESTED_ACTION_NOT_TAKEN: u32  = 452;
 
-    // 4xx: Transient Negative Completion Reply
-    pub static STATUS_NOT_AVAILABLE: int               = 421;
-    pub static STATUS_CANNOT_OPEN_DATA_Connection: int = 425;
-    pub static STATUS_TRANSER_ABORTED: int             = 426;
-    pub static STATUS_INVALID_CREDENTIALS: int         = 430;
-    pub static STATUS_HOST_UNAVAILABLE: int            = 434;
-    pub static STATUS_REQUEST_FILE_ACTION_IGNORED: int = 450;
-    pub static STATUS_ACTION_ABORTED: int              = 451;
-    pub static STATUS_REQUESTED_ACTION_NOT_TAKEN: int  = 452;
-
-    // 5xx: Permanent Negative Completion Reply
-    pub static STATUS_BAD_COMMAND: int                 = 500;
-    pub static STATUS_BAD_ARGUMENTS: int               = 501;
-    pub static STATUS_NOT_IMPLEMENTED: int             = 502;
-    pub static STATUS_BAD_SEQUENCE: int                = 503;
-    pub static STATUS_NOT_IMPLEMENTED_PARAMETER: int   = 504;
-    pub static STATUS_NOT_LOGGED_IN: int               = 530;
-    pub static STATUS_STORING_NEEd_ACCOUNT: int        = 532;
-    pub static STATUS_FILE_UNAVAILABLE: int            = 550;
-    pub static STATUS_PAGE_TYPE_UNKNOWN: int           = 551;
-    pub static STATUS_EXCEEDED_STORAGE: int            = 552;
-    pub static STATUS_BAD_FILENAME: int                = 553;
-}
+// 5xx: Permanent Negative Completion Reply
+pub const BAD_COMMAND: u32                 = 500;
+pub const BAD_ARGUMENTS: u32               = 501;
+pub const NOT_IMPLEMENTED: u32             = 502;
+pub const BAD_SEQUENCE: u32                = 503;
+pub const NOT_IMPLEMENTED_PARAMETER: u32   = 504;
+pub const NOT_LOGGED_IN: u32               = 530;
+pub const STORING_NEED_ACCOUNT: u32        = 532;
+pub const FILE_UNAVAILABLE: u32            = 550;
+pub const PAGE_TYPE_UNKNOWN: u32           = 551;
+pub const EXCEEDED_STORAGE: u32            = 552;
+pub const BAD_FILENAME: u32                = 553;

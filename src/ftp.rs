@@ -21,6 +21,8 @@ use std::net::TcpStream;
 use std::string::String;
 use std::net::ToSocketAddrs;
 
+pub mod status;
+
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 #[derive(Debug)]
 pub struct FtpStream {
@@ -35,7 +37,7 @@ impl FtpStream {
             reader: reader
         };
 
-        try!(ftp_stream.read_response(220));
+        try!(ftp_stream.read_response(status::READY));
         Ok(ftp_stream)
     }
 
@@ -49,10 +51,10 @@ impl FtpStream {
         let user_command = format!("USER {}\r\n", user);
         try!(self.write_str(&user_command));
 
-        self.read_response(331).and_then(|_| {
+        self.read_response(status::USER_OK).and_then(|_| {
             let pass_command = format!("PASS {}\r\n", password);
             try!(self.write_str(&pass_command));
-            try!(self.read_response(230));
+            try!(self.read_response(status::LOGGED_IN));
             Ok(())
         })
     }
@@ -62,7 +64,7 @@ impl FtpStream {
         let cwd_command = format!("CWD {}\r\n", path);
 
         try!(self.write_str(&cwd_command));
-        try!(self.read_response(250));
+        try!(self.read_response(status::REQUESTED_FILE_ACTION_OK));
         Ok(())
     }
 
@@ -71,7 +73,7 @@ impl FtpStream {
         let cdup_command = format!("CDUP\r\n");
 
         try!(self.write_str(&cdup_command));
-        try!(self.read_response(250));
+        try!(self.read_response(status::REQUESTED_FILE_ACTION_OK));
         Ok(())
     }
 
@@ -105,7 +107,7 @@ impl FtpStream {
         let pwd_command = format!("PWD\r\n");
 
         try!(self.write_str(&pwd_command));
-        self.read_response(257).and_then(|(_, line)| {
+        self.read_response(status::PATH_CREATED).and_then(|(_, line)| {
             let begin = index_of(&line, '"');
             let end = last_index_of(&line, '"');
 
@@ -124,7 +126,7 @@ impl FtpStream {
     pub fn noop(&mut self) -> Result<()> {
         let noop_command = format!("NOOP\r\n");
         try!(self.write_str(&noop_command));
-        try!(self.read_response(200));
+        try!(self.read_response(status::COMMAND_OK));
         Ok(())
     }
 
@@ -132,7 +134,7 @@ impl FtpStream {
     pub fn mkdir(&mut self, pathname: &str) -> Result<()> {
         let mkdir_command = format!("MKD {}\r\n", pathname);
         try!(self.write_str(&mkdir_command));
-        try!(self.read_response(257));
+        try!(self.read_response(status::PATH_CREATED));
         Ok(())
     }
 
@@ -141,7 +143,7 @@ impl FtpStream {
         try!(self.write_str("PASV\r\n"));
 
         // PASV response format : 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2).
-        self.read_response(227).and_then(|(_, line)| {
+        self.read_response(status::PASSIVE_MODE).and_then(|(_, line)| {
             let vec = line.split(",").collect::<Vec<_>>();
             if vec.len() != 6 {
                 return Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)));
@@ -162,7 +164,7 @@ impl FtpStream {
     pub fn quit(&mut self) -> Result<()> {
         let quit_command = format!("QUIT\r\n");
         try!(self.write_str(&quit_command));
-        try!(self.read_response(221));
+        try!(self.read_response(status::CLOSING));
         Ok(())
     }
 
@@ -175,7 +177,7 @@ impl FtpStream {
         let data_stream = BufReader::new(try!(self.pasv()));
 
         try!(self.write_str(&retr_command));
-        self.read_response(150).and_then(|_| Ok(data_stream))
+        self.read_response(status::ABOUT_TO_SEND).and_then(|_| Ok(data_stream))
     }
 
     fn simple_retr_(&mut self, file_name: &str) -> Result<Cursor<Vec<u8>>> {
@@ -202,7 +204,7 @@ impl FtpStream {
     /// Simple way to retr a file from the server. This stores the file in memory.
     pub fn simple_retr(&mut self, file_name: &str) -> Result<Cursor<Vec<u8>>> {
         let r = try!(self.simple_retr_(file_name));
-        try!(self.read_response(226));
+        try!(self.read_response(status::CLOSING_DATA_CONNECTION));
         Ok(r)
     }
 
@@ -210,7 +212,7 @@ impl FtpStream {
     pub fn rmdir(&mut self, pathname: &str) -> Result<()> {
         let rmd_command = format!("RMD {}\r\n", pathname);
         try!(self.write_str(&rmd_command));
-        try!(self.read_response(250));
+        try!(self.read_response(status::REQUESTED_FILE_ACTION_OK));
         Ok(())
     }
 
@@ -219,7 +221,7 @@ impl FtpStream {
         let mut data_stream = BufWriter::new(try!(self.pasv()));
 
         try!(self.write_str(&stor_command));
-        try!(self.read_response_in(&[150, 125]));
+        try!(self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND]));
 
         try!(copy(r, &mut data_stream));
         Ok(())
@@ -228,7 +230,7 @@ impl FtpStream {
     /// This stores a file on the server.
     pub fn put<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         try!(self.put_file(filename, r));
-        try!(self.read_response(226));
+        try!(self.read_response(status::CLOSING_DATA_CONNECTION));
         Ok(())
     }
 
