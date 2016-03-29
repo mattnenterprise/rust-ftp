@@ -26,9 +26,10 @@ Possible log types:
 ### [Unreleased from branch list_commands]
 - [changed] Separate main lib file and FTP stream implementation.
 - [changed] Regex is used to parse PASV response.
-- [added] The implementation of LIST command. See method `list`.
-- [added] The implementation of NLST command. See method `nlst`.
-- [added] The implementation of MDTM command. See method `mdtm`.
+- [added] The implementation of LIST command. See method `FtpStream::list`.
+- [added] The implementation of NLST command. See method `FtpStream::nlst`.
+- [added] The implementation of MDTM command. See method `FtpStream::mdtm`.
+- [added] The implementation of SIZE command. See method `FtpStream::size`.
 
 
 ### [v0.0.7] (2016-01-11)

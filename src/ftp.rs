@@ -14,6 +14,9 @@ lazy_static! {
 
     // This regex extracts modification time from MDTM command response.
     static ref MDTM_RE: Regex = Regex::new(r"\b(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\b").unwrap();
+
+    // This regex extracts file size from SIZE command response.
+    static ref SIZE_RE: Regex = Regex::new(r"\s+(\d+)\s*$").unwrap();
 }
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
@@ -255,6 +258,19 @@ impl FtpStream {
                 let (hour, minute, second) = (caps[4].parse::<u32>().unwrap(), caps[5].parse::<u32>().unwrap(), caps[6].parse::<u32>().unwrap());
                 Ok(Some(UTC.ymd(year, month, day).and_hms(hour, minute, second)))
             },
+            None => Ok(None)
+        }
+    }
+
+    /// Retrieves the size of the file in bytes at `pathname` if it exists.
+    /// In case the file does not exist `None` is returned.
+    pub fn size(&mut self, pathname: &str) -> Result<Option<usize>> {
+        let size_command = format!("SIZE {}\r\n", pathname);
+        try!(self.write_str(&size_command));
+        let (_, line) = try!(self.read_response(status::FILE));
+
+        match SIZE_RE.captures(&line) {
+            Some(caps) => Ok(Some(caps[1].parse().unwrap())),
             None => Ok(None)
         }
     }
