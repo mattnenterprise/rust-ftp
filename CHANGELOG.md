@@ -23,6 +23,9 @@ Possible log types:
 - [changed] Improved error handling (#21)
 - ...
 
+### [Unreleased branch list_commands]
+- [changed] Separate main lib file and FTP stream implementation.
+
 
 ### [v0.0.7] (2016-01-11)
 
