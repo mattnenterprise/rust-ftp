@@ -10,4 +10,4 @@ license = "MIT OR Apache-2.0"
 
 [lib]
 name ="ftp"
-path = "src/ftp.rs"
+path = "src/lib.rs"
