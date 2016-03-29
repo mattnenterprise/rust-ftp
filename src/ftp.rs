@@ -191,6 +191,52 @@ impl FtpStream {
         Ok(())
     }
 
+    /// Execute a command which returns list of strings in a separate stream
+    fn list_command(&mut self, cmd: String, open_code: u32, close_code: u32) -> Result<Vec<String>> {
+        let mut data_stream = BufReader::new(try!(self.pasv()));
+
+        try!(self.write_str(&cmd));
+        try!(self.read_response(open_code));
+
+        let mut lines: Vec<String> = Vec::new();
+        let mut line = String::new();
+        loop {
+            match data_stream.read_to_string(&mut line) {
+                Ok(0) => break,
+                Ok(_) => lines.extend(line.split("\r\n").into_iter().map(|s| String::from(s)).filter(|s| s.len() > 0)),
+                Err(err) => return Err(err),
+            };
+        }
+
+        try!(self.read_response(close_code));
+
+        Ok(lines)
+    }
+
+    /// Execute `LIST` command which returns the detailed file listing in human readable format.
+    /// If `pathname` is omited then the list of files in the current directory will be
+    /// returned otherwise it will the list of files on `pathname`.
+    pub fn list(&mut self, pathname: Option<&str>) -> Result<Vec<String>> {
+        let command = match pathname {
+            Some(path) => format!("LIST {}\r\n", path),
+            None => String::from("LIST\r\n"),
+        };
+
+        self.list_command(command, status::ABOUT_TO_SEND, status::CLOSING_DATA_CONNECTION)
+    }
+
+    /// Execute `NLST` command which returns the list of file names only.
+    /// If `pathname` is omited then the list of files in the current directory will be
+    /// returned otherwise it will the list of files on `pathname`.
+    pub fn nlst(&mut self, pathname: Option<&str>) -> Result<Vec<String>> {
+        let command = match pathname {
+            Some(path) => format!("NLST {}\r\n", path),
+            None => String::from("NLST\r\n"),
+        };
+
+        self.list_command(command, status::ABOUT_TO_SEND, status::CLOSING_DATA_CONNECTION)
+    }
+
     pub fn read_response(&mut self, expected_code: u32) -> Result<(u32, String)> {
         self.read_response_in(&[expected_code])
     }
