@@ -28,6 +28,7 @@ Possible log types:
 - [changed] Regex is used to parse PASV response.
 - [added] The implementation of LIST command. See method `list`.
 - [added] The implementation of NLST command. See method `nlst`.
+- [added] The implementation of MDTM command. See method `mdtm`.
 
 
 ### [v0.0.7] (2016-01-11)

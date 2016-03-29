@@ -3,12 +3,17 @@ use std::net::TcpStream;
 use std::string::String;
 use std::net::ToSocketAddrs;
 use regex::Regex;
+use chrono::{DateTime, UTC};
+use chrono::offset::TimeZone;
 use super::status;
 
 lazy_static! {
     // This regex extracts IP and Port details from PASV command response.
     // The regex looks for the pattern (h1,h2,h3,h4,p1,p2).
     static ref PORT_RE: Regex = Regex::new(r"\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)").unwrap();
+
+    // This regex extracts modification time from MDTM command response.
+    static ref MDTM_RE: Regex = Regex::new(r"\b(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\b").unwrap();
 }
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
@@ -235,6 +240,23 @@ impl FtpStream {
         };
 
         self.list_command(command, status::ABOUT_TO_SEND, status::CLOSING_DATA_CONNECTION)
+    }
+
+    /// Retrieves the modification time of the file at `pathname` if it exists.
+    /// In case the file does not exist `None` is returned.
+    pub fn mdtm(&mut self, pathname: &str) -> Result<Option<DateTime<UTC>>> {
+        let mdtm_command = format!("MDTM {}\r\n", pathname);
+        try!(self.write_str(&mdtm_command));
+        let (_, line) = try!(self.read_response(status::FILE));
+
+        match MDTM_RE.captures(&line) {
+            Some(caps) => {
+                let (year, month, day) = (caps[1].parse::<i32>().unwrap(), caps[2].parse::<u32>().unwrap(), caps[3].parse::<u32>().unwrap());
+                let (hour, minute, second) = (caps[4].parse::<u32>().unwrap(), caps[5].parse::<u32>().unwrap(), caps[6].parse::<u32>().unwrap());
+                Ok(Some(UTC.ymd(year, month, day).and_hms(hour, minute, second)))
+            },
+            None => Ok(None)
+        }
     }
 
     pub fn read_response(&mut self, expected_code: u32) -> Result<(u32, String)> {
