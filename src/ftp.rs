@@ -2,7 +2,14 @@ use std::io::{Error, ErrorKind, Read, Result, BufRead, BufReader, BufWriter, Cur
 use std::net::TcpStream;
 use std::string::String;
 use std::net::ToSocketAddrs;
+use regex::Regex;
 use super::status;
+
+lazy_static! {
+    // This regex extracts IP and Port details from PASV command response.
+    // The regex looks for the pattern (h1,h2,h3,h4,p1,p2).
+    static ref PORT_RE: Regex = Regex::new(r"\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)").unwrap();
+}
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 #[derive(Debug)]
@@ -94,18 +101,18 @@ impl FtpStream {
 
         // PASV response format : 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2).
         self.read_response(status::PASSIVE_MODE).and_then(|(_, line)| {
-            let vec = line.split(",").collect::<Vec<_>>();
-            if vec.len() != 6 {
-                return Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)));
-            }
-
-            match (vec[4].parse::<u8>(), vec[5].parse::<u8>()) {
-                (Ok(msb), Ok(lsb)) => {
+            match PORT_RE.captures(&line) {
+                Some(caps) => {
+                    // If the regex matches we can be sure groups contains numbers
+                    let (oct1, oct2, oct3, oct4) = (caps[1].parse::<u8>().unwrap(), caps[2].parse::<u8>().unwrap(), caps[3].parse::<u8>().unwrap(), caps[4].parse::<u8>().unwrap());
+                    let (msb, lsb) = (caps[5].parse::<u8>().unwrap(), caps[6].parse::<u8>().unwrap());
                     let port = ((msb as u16) << 8) + lsb as u16;
-                    let addr = format!("{}.{}.{}.{}:{}", vec[0], vec[1], vec[2], vec[3], port);
+                    let addr = format!("{}.{}.{}.{}:{}", oct1, oct2, oct3, oct4, port);
                     TcpStream::connect(&*addr)
                 },
-                _ => Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)))
+                None => {
+                    Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)))
+                }
             }
         })
     }

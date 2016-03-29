@@ -11,3 +11,7 @@ license = "MIT OR Apache-2.0"
 [lib]
 name ="ftp"
 path = "src/lib.rs"
+
+[dependencies]
+lazy_static = "*"
+regex = "*"
