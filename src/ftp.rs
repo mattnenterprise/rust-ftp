@@ -1,27 +1,23 @@
-#![crate_name = "ftp"]
-#![crate_type = "lib"]
-
-//! ftp is an FTP client written in Rust.
-//!
-//! ### Usage
-//!
-//! Here is a basic usage example:
-//!
-//! ```rust
-//! use ftp::FtpStream;
-//! let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap_or_else(|err|
-//!     panic!("{}", err)
-//! );
-//! let _ = ftp_stream.quit();
-//! ```
-//!
-
 use std::io::{Error, ErrorKind, Read, Result, BufRead, BufReader, BufWriter, Cursor, Write, copy};
 use std::net::TcpStream;
 use std::string::String;
 use std::net::ToSocketAddrs;
+use regex::Regex;
+use chrono::{DateTime, UTC};
+use chrono::offset::TimeZone;
+use super::status;
 
-pub mod status;
+lazy_static! {
+    // This regex extracts IP and Port details from PASV command response.
+    // The regex looks for the pattern (h1,h2,h3,h4,p1,p2).
+    static ref PORT_RE: Regex = Regex::new(r"\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)").unwrap();
+
+    // This regex extracts modification time from MDTM command response.
+    static ref MDTM_RE: Regex = Regex::new(r"\b(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\b").unwrap();
+
+    // This regex extracts file size from SIZE command response.
+    static ref SIZE_RE: Regex = Regex::new(r"\s+(\d+)\s*$").unwrap();
+}
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 #[derive(Debug)]
@@ -113,18 +109,18 @@ impl FtpStream {
 
         // PASV response format : 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2).
         self.read_response(status::PASSIVE_MODE).and_then(|(_, line)| {
-            let vec = line.split(",").collect::<Vec<_>>();
-            if vec.len() != 6 {
-                return Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)));
-            }
-
-            match (vec[4].parse::<u8>(), vec[5].parse::<u8>()) {
-                (Ok(msb), Ok(lsb)) => {
+            match PORT_RE.captures(&line) {
+                Some(caps) => {
+                    // If the regex matches we can be sure groups contains numbers
+                    let (oct1, oct2, oct3, oct4) = (caps[1].parse::<u8>().unwrap(), caps[2].parse::<u8>().unwrap(), caps[3].parse::<u8>().unwrap(), caps[4].parse::<u8>().unwrap());
+                    let (msb, lsb) = (caps[5].parse::<u8>().unwrap(), caps[6].parse::<u8>().unwrap());
                     let port = ((msb as u16) << 8) + lsb as u16;
-                    let addr = format!("{}.{}.{}.{}:{}", vec[0], vec[1], vec[2], vec[3], port);
+                    let addr = format!("{}.{}.{}.{}:{}", oct1, oct2, oct3, oct4, port);
                     TcpStream::connect(&*addr)
                 },
-                _ => Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)))
+                None => {
+                    Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)))
+                }
             }
         })
     }
@@ -201,6 +197,82 @@ impl FtpStream {
         try!(self.put_file(filename, r));
         try!(self.read_response(status::CLOSING_DATA_CONNECTION));
         Ok(())
+    }
+
+    /// Execute a command which returns list of strings in a separate stream
+    fn list_command(&mut self, cmd: String, open_code: u32, close_code: u32) -> Result<Vec<String>> {
+        let mut data_stream = BufReader::new(try!(self.pasv()));
+
+        try!(self.write_str(&cmd));
+        try!(self.read_response(open_code));
+
+        let mut lines: Vec<String> = Vec::new();
+        let mut line = String::new();
+        loop {
+            match data_stream.read_to_string(&mut line) {
+                Ok(0) => break,
+                Ok(_) => lines.extend(line.split("\r\n").into_iter().map(|s| String::from(s)).filter(|s| s.len() > 0)),
+                Err(err) => return Err(err),
+            };
+        }
+
+        try!(self.read_response(close_code));
+
+        Ok(lines)
+    }
+
+    /// Execute `LIST` command which returns the detailed file listing in human readable format.
+    /// If `pathname` is omited then the list of files in the current directory will be
+    /// returned otherwise it will the list of files on `pathname`.
+    pub fn list(&mut self, pathname: Option<&str>) -> Result<Vec<String>> {
+        let command = match pathname {
+            Some(path) => format!("LIST {}\r\n", path),
+            None => String::from("LIST\r\n"),
+        };
+
+        self.list_command(command, status::ABOUT_TO_SEND, status::CLOSING_DATA_CONNECTION)
+    }
+
+    /// Execute `NLST` command which returns the list of file names only.
+    /// If `pathname` is omited then the list of files in the current directory will be
+    /// returned otherwise it will the list of files on `pathname`.
+    pub fn nlst(&mut self, pathname: Option<&str>) -> Result<Vec<String>> {
+        let command = match pathname {
+            Some(path) => format!("NLST {}\r\n", path),
+            None => String::from("NLST\r\n"),
+        };
+
+        self.list_command(command, status::ABOUT_TO_SEND, status::CLOSING_DATA_CONNECTION)
+    }
+
+    /// Retrieves the modification time of the file at `pathname` if it exists.
+    /// In case the file does not exist `None` is returned.
+    pub fn mdtm(&mut self, pathname: &str) -> Result<Option<DateTime<UTC>>> {
+        let mdtm_command = format!("MDTM {}\r\n", pathname);
+        try!(self.write_str(&mdtm_command));
+        let (_, line) = try!(self.read_response(status::FILE));
+
+        match MDTM_RE.captures(&line) {
+            Some(caps) => {
+                let (year, month, day) = (caps[1].parse::<i32>().unwrap(), caps[2].parse::<u32>().unwrap(), caps[3].parse::<u32>().unwrap());
+                let (hour, minute, second) = (caps[4].parse::<u32>().unwrap(), caps[5].parse::<u32>().unwrap(), caps[6].parse::<u32>().unwrap());
+                Ok(Some(UTC.ymd(year, month, day).and_hms(hour, minute, second)))
+            },
+            None => Ok(None)
+        }
+    }
+
+    /// Retrieves the size of the file in bytes at `pathname` if it exists.
+    /// In case the file does not exist `None` is returned.
+    pub fn size(&mut self, pathname: &str) -> Result<Option<usize>> {
+        let size_command = format!("SIZE {}\r\n", pathname);
+        try!(self.write_str(&size_command));
+        let (_, line) = try!(self.read_response(status::FILE));
+
+        match SIZE_RE.captures(&line) {
+            Some(caps) => Ok(Some(caps[1].parse().unwrap())),
+            None => Ok(None)
+        }
     }
 
     pub fn read_response(&mut self, expected_code: u32) -> Result<(u32, String)> {
