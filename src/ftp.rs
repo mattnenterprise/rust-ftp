@@ -47,10 +47,12 @@ impl FtpStream {
         let user_command = format!("USER {}\r\n", user);
         try!(self.write_str(&user_command));
 
-        self.read_response(status::USER_OK).and_then(|_| {
-            let pass_command = format!("PASS {}\r\n", password);
-            try!(self.write_str(&pass_command));
-            try!(self.read_response(status::LOGGED_IN));
+        self.read_response_in(&[status::LOGGED_IN, status::NEED_PASSWORD]).and_then(|(code, _)| {
+            if code == status::NEED_PASSWORD {
+                let pass_command = format!("PASS {}\r\n", password);
+                try!(self.write_str(&pass_command));
+                try!(self.read_response(status::LOGGED_IN));
+            }
             Ok(())
         })
     }
@@ -302,7 +304,7 @@ impl FtpStream {
         if expected_code.into_iter().any(|ec| code == *ec) {
             Ok((code, line))
         } else {
-            Err(Error::new(ErrorKind::Other, format!("Invalid response: {} {}", code, line)))
+            Err(Error::new(ErrorKind::Other, format!("Expected code {:?}, got response: {}", expected_code, line)))
         }
     }
 }

@@ -3,11 +3,8 @@ before_install:
   - sudo apt-get install -yqq bc pure-ftpd
   - sudo groupadd ftp
   - sudo useradd -s /bin/false -d /home/ftp -m -c "anonymous ftp" -g ftp ftp
-  - sudo rm /etc/pure-ftpd/conf/NoAnonymous
-  - echo "no" | sudo tee -a /etc/pure-ftpd/conf/NoAnonymous
-  - cat /etc/pure-ftpd/conf/NoAnonymous
-  - sudo -u ftp mkdir /home/ftp/temp
-  - echo "bar" | sudo tee -a /home/ftp/temp/foo.txt
+  - echo "no" | sudo tee /etc/pure-ftpd/conf/NoAnonymous
+  - echo "yes" | sudo tee /etc/pure-ftpd/conf/AnonymousCanCreateDirs
   - sudo /etc/init.d/pure-ftpd restart
 
 language: rust
