@@ -6,6 +6,7 @@ use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
 use super::status;
+use super::types::FileType;
 
 lazy_static! {
     // This regex extracts IP and Port details from PASV command response.
@@ -125,6 +126,15 @@ impl FtpStream {
                 }
             }
         })
+    }
+
+    /// Sets the type of file to be transferred. That is the implementation
+    /// of `TYPE` command.
+    pub fn transfer_type(&mut self, file_type: FileType) -> Result<()> {
+        let type_command = format!("TYPE {}\r\n", file_type.to_string());
+        try!(self.write_str(&type_command));
+        try!(self.read_response(status::COMMAND_OK));
+        Ok(())
     }
 
     /// Quits the current FTP session.
