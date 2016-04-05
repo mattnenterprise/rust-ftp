@@ -147,6 +147,41 @@ impl FtpStream {
         self.read_response(status::ABOUT_TO_SEND).and_then(|_| Ok(data_stream))
     }
 
+    /// The implementation of `RETR` command where `filename` is the name of the file
+    /// to download from FTP and `reader` is the function which operates with the
+    /// data stream opened.
+    ///
+    /// ```ignore
+    /// let result = conn.retr("take_this.txt", |stream| {
+    ///   let mut file = File::create("store_here.txt").unwrap();  
+    ///   let mut buf = [0; 2048];
+    /// 
+    ///   loop {
+    ///     match stream.read(&mut buf) {
+    ///       Ok(0) => break,
+    ///       Ok(n) => file.write_all(&buf[0..n]).unwrap(),
+    ///       Err(err) => return Err(err)
+    ///     };
+    ///   }
+    /// 
+    ///   Ok(())
+    /// });
+    /// ```
+    pub fn retr<F>(&mut self, filename: &str, reader: F) -> Result<()>
+    where F: Fn(&mut Read) -> Result<()> {
+        let mut data_stream = BufReader::new(try!(self.pasv()));
+
+        let retr_command = format!("RETR {}\r\n", filename);
+        try!(self.write_str(&retr_command));
+        self.read_response(status::ABOUT_TO_SEND).and_then(|_| {
+            let result = reader(&mut data_stream);
+            drop(data_stream);
+            try!(self.read_response(status::CLOSING_DATA_CONNECTION));
+
+            result
+        })
+    }
+
     fn simple_retr_(&mut self, file_name: &str) -> Result<Cursor<Vec<u8>>> {
         let mut data_stream = match self.get(file_name) {
             Ok(s) => s,
