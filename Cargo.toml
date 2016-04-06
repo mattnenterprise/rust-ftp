@@ -12,7 +12,14 @@ license = "MIT OR Apache-2.0"
 name ="ftp"
 path = "src/lib.rs"
 
+[features]
+secure = ["openssl"]
+
 [dependencies]
-lazy_static = "*"
-regex = "*"
-chrono = "*"
+lazy_static = "0.1"
+regex = "0.1"
+chrono = "0.2"
+
+[dependencies.openssl]
+version = "0.7"
+optional = true

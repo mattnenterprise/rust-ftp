@@ -5,6 +5,9 @@ use std::net::ToSocketAddrs;
 use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
+#[cfg(feature = "secure")]
+use openssl::ssl::{Ssl, SslContext, SslMethod, SslStream};
+use super::data_stream::DataStream;
 use super::status;
 use super::types::FileType;
 
@@ -23,19 +26,56 @@ lazy_static! {
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 #[derive(Debug)]
 pub struct FtpStream {
-    reader: BufReader<TcpStream>
+    reader: BufReader<DataStream>,
 }
 
 impl FtpStream {
     /// Creates an FTP Stream.
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
-        let reader = BufReader::new(try!(TcpStream::connect(addr)));
-        let mut ftp_stream = FtpStream {
-            reader: reader
-        };
+        match TcpStream::connect(addr) {
+            Ok(stream) => {
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Tcp(stream)),
+                };
 
-        try!(ftp_stream.read_response(status::READY));
-        Ok(ftp_stream)
+                try!(ftp_stream.read_response(status::READY));
+                Ok(ftp_stream)
+            },
+            Err(e) => Err(e)
+        }
+    }
+
+    /// Creates a Secure FTP Stream.
+    #[cfg(feature = "secure")]
+    pub fn secure_connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
+        match TcpStream::connect(addr) {
+            Ok(stream) => {
+                // Initialize SSL instance
+                let context = match SslContext::new(SslMethod::Sslv23) {
+                    Ok(ctx) => ctx,
+                    Err(e) => return Err(Error::new(ErrorKind::Other, e))
+                };
+
+                let ssl = match Ssl::new(&context) {
+                    Ok(ssl) => ssl,
+                    Err(e) => return Err(Error::new(ErrorKind::Other, e))
+                };
+
+                // Make the opened stream secured
+                let stream = match SslStream::connect(ssl, stream) {
+                    Ok(stream) => stream,
+                    Err(e) => return Err(Error::new(ErrorKind::Other, e))
+                };
+
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Ssl(stream)),
+                };
+
+                try!(ftp_stream.read_response(status::READY));
+                Ok(ftp_stream)
+            },
+            Err(e) => Err(e)
+        }
     }
 
     fn write_str(&mut self, s: &str) -> Result<()> {

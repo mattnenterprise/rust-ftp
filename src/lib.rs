@@ -19,8 +19,11 @@
 #[macro_use] extern crate lazy_static;
 extern crate regex;
 extern crate chrono;
+#[cfg(feature = "secure")]
+extern crate openssl;
 
 mod ftp;
+mod data_stream;
 pub mod types;
 pub mod status;
 
