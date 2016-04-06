@@ -21,6 +21,7 @@ extern crate regex;
 extern crate chrono;
 
 mod ftp;
+pub mod types;
 pub mod status;
 
 pub use self::ftp::FtpStream;

@@ -6,6 +6,7 @@ use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
 use super::status;
+use super::types::FileType;
 
 lazy_static! {
     // This regex extracts IP and Port details from PASV command response.
@@ -127,6 +128,15 @@ impl FtpStream {
         })
     }
 
+    /// Sets the type of file to be transferred. That is the implementation
+    /// of `TYPE` command.
+    pub fn transfer_type(&mut self, file_type: FileType) -> Result<()> {
+        let type_command = format!("TYPE {}\r\n", file_type.to_string());
+        try!(self.write_str(&type_command));
+        try!(self.read_response(status::COMMAND_OK));
+        Ok(())
+    }
+
     /// Quits the current FTP session.
     pub fn quit(&mut self) -> Result<()> {
         let quit_command = format!("QUIT\r\n");
@@ -145,6 +155,41 @@ impl FtpStream {
 
         try!(self.write_str(&retr_command));
         self.read_response(status::ABOUT_TO_SEND).and_then(|_| Ok(data_stream))
+    }
+
+    /// The implementation of `RETR` command where `filename` is the name of the file
+    /// to download from FTP and `reader` is the function which operates with the
+    /// data stream opened.
+    ///
+    /// ```ignore
+    /// let result = conn.retr("take_this.txt", |stream| {
+    ///   let mut file = File::create("store_here.txt").unwrap();  
+    ///   let mut buf = [0; 2048];
+    /// 
+    ///   loop {
+    ///     match stream.read(&mut buf) {
+    ///       Ok(0) => break,
+    ///       Ok(n) => file.write_all(&buf[0..n]).unwrap(),
+    ///       Err(err) => return Err(err)
+    ///     };
+    ///   }
+    /// 
+    ///   Ok(())
+    /// });
+    /// ```
+    pub fn retr<F>(&mut self, filename: &str, reader: F) -> Result<()>
+    where F: Fn(&mut Read) -> Result<()> {
+        let mut data_stream = BufReader::new(try!(self.pasv()));
+
+        let retr_command = format!("RETR {}\r\n", filename);
+        try!(self.write_str(&retr_command));
+        self.read_response(status::ABOUT_TO_SEND).and_then(|_| {
+            let result = reader(&mut data_stream);
+            drop(data_stream);
+            try!(self.read_response(status::CLOSING_DATA_CONNECTION));
+
+            result
+        })
     }
 
     fn simple_retr_(&mut self, file_name: &str) -> Result<Cursor<Vec<u8>>> {
