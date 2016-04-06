@@ -21,6 +21,7 @@ Possible log types:
 - [changed] Type of port number returned by `pasv` changed from `isize`
   to `u32` (#18)
 - [changed] Improved error handling (#21)
+- [added] Ability to rename files on the server
 - ...
 
 ### [Unreleased from branch list_commands]
