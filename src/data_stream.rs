@@ -13,6 +13,25 @@ pub enum DataStream {
 }
 
 
+#[cfg(feature = "secure")]
+impl DataStream {
+	/// Unwrap the stream into TcpStream. This method is only used in secure connection.
+	pub fn into_tcp_stream(self) -> TcpStream {
+		match self {
+			DataStream::Tcp(stream) => stream,
+			DataStream::Ssl(stream) => stream.get_ref().try_clone().unwrap(),
+		}
+	}
+
+	/// Test if the stream is secured
+	pub fn is_ssl(&self) -> bool {
+		match self {
+		    &DataStream::Ssl(_) => true,
+		    _ => false
+		}
+	}
+}
+
 impl Read for DataStream {
 	fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
 		match self {

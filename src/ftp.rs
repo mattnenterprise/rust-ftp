@@ -11,6 +11,9 @@ use super::data_stream::DataStream;
 use super::status;
 use super::types::FileType;
 
+// The size of protect buffer for PBSZ command
+static PROTECT_BUFFER_SIZE: u32 = 0;
+
 lazy_static! {
     // This regex extracts IP and Port details from PASV command response.
     // The regex looks for the pattern (h1,h2,h3,h4,p1,p2).
@@ -21,6 +24,12 @@ lazy_static! {
 
     // This regex extracts file size from SIZE command response.
     static ref SIZE_RE: Regex = Regex::new(r"\s+(\d+)\s*$").unwrap();
+
+    // Shared SSL context
+    static ref SSL_CONTEXT: SslContext = match SslContext::new(SslMethod::Sslv23) {
+        Ok(ctx) => ctx,
+        Err(e) => panic!("{}", e)
+    };
 }
 
 /// Stream to interface with the FTP server. This interface is only for the command stream.
@@ -45,36 +54,66 @@ impl FtpStream {
         }
     }
 
-    /// Creates a Secure FTP Stream.
+    /// Switch to secure mode if possible. If the connection is already
+    /// secure does nothing.
     #[cfg(feature = "secure")]
-    pub fn secure_connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
-        match TcpStream::connect(addr) {
-            Ok(stream) => {
-                // Initialize SSL instance
-                let context = match SslContext::new(SslMethod::Sslv23) {
-                    Ok(ctx) => ctx,
-                    Err(e) => return Err(Error::new(ErrorKind::Other, e))
-                };
+    pub fn secure(mut self) -> Result<FtpStream> {
+        let secured = self.reader.get_ref().is_ssl();
+        if secured {
+            Ok(self)
+        }
+        else {
+            // Ask the server to start securing data
+            let auth_command = String::from("AUTH TLS\r\n");
+            try!(self.write_str(&auth_command));
+            try!(self.read_response(status::AUTH_OK));
 
-                let ssl = match Ssl::new(&context) {
-                    Ok(ssl) => ssl,
-                    Err(e) => return Err(Error::new(ErrorKind::Other, e))
-                };
+            // Initialize SSL and make the opened stream secured
+            let ssl = match Ssl::new(&SSL_CONTEXT) {
+                Ok(ssl) => ssl,
+                Err(e) => return Err(Error::new(ErrorKind::Other, e))
+            };
 
-                // Make the opened stream secured
-                let stream = match SslStream::connect(ssl, stream) {
-                    Ok(stream) => stream,
-                    Err(e) => return Err(Error::new(ErrorKind::Other, e))
-                };
+            let stream = match SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream()) {
+                Ok(stream) => stream,
+                Err(e) => return Err(Error::new(ErrorKind::Other, e))
+            };
 
-                let mut ftp_stream = FtpStream {
-                    reader: BufReader::new(DataStream::Ssl(stream)),
-                };
+            let mut secured_ftp_tream = FtpStream {
+                reader: BufReader::new(DataStream::Ssl(stream)),
+            };
 
-                try!(ftp_stream.read_response(status::READY));
-                Ok(ftp_stream)
-            },
-            Err(e) => Err(e)
+            // Set protection buffer size
+            let pbsz_command = format!("PBSZ {}\r\n", PROTECT_BUFFER_SIZE);
+            try!(secured_ftp_tream.write_str(&pbsz_command));
+            try!(secured_ftp_tream.read_response(status::COMMAND_OK));
+
+            // Change the level of data protectio to Private
+            let prot_command = String::from("PROT C\r\n");
+            try!(secured_ftp_tream.write_str(&prot_command));
+            try!(secured_ftp_tream.read_response(status::COMMAND_OK));
+
+            Ok(secured_ftp_tream)
+        }
+    }
+
+    /// Switch to insecure mode if possible. If the connection is already
+    /// insecure does nothing.
+    #[cfg(feature = "secure")]
+    pub fn insecure(mut self) -> Result<FtpStream> {
+        let secured = self.reader.get_ref().is_ssl();
+        if secured {
+            // Ask the server to stop securing data
+            let ccc_command = String::from("CCC\r\n");
+            try!(self.write_str(&ccc_command));
+            try!(self.read_response(status::COMMAND_OK));
+
+            Ok(FtpStream {
+                reader: BufReader::new(DataStream::Tcp(self.reader.into_inner().into_tcp_stream())),
+            })
+        }
+        else {
+            Ok(self)
         }
     }
 
@@ -159,6 +198,7 @@ impl FtpStream {
                     let (msb, lsb) = (caps[5].parse::<u8>().unwrap(), caps[6].parse::<u8>().unwrap());
                     let port = ((msb as u16) << 8) + lsb as u16;
                     let addr = format!("{}.{}.{}.{}:{}", oct1, oct2, oct3, oct4, port);
+
                     TcpStream::connect(&*addr)
                 },
                 None => {
@@ -223,7 +263,7 @@ impl FtpStream {
 
         let retr_command = format!("RETR {}\r\n", filename);
         try!(self.write_str(&retr_command));
-        self.read_response(status::ABOUT_TO_SEND).and_then(|_| {
+        self.read_response_in(&[status::ABOUT_TO_SEND, status::ALREADY_OPEN]).and_then(|_| {
             let result = reader(&mut data_stream);
             drop(data_stream);
             try!(self.read_response(status::CLOSING_DATA_CONNECTION));
@@ -291,7 +331,7 @@ impl FtpStream {
         let mut data_stream = BufReader::new(try!(self.pasv()));
 
         try!(self.write_str(&cmd));
-        try!(self.read_response(open_code));
+        try!(self.read_response_in(&[open_code, status::ALREADY_OPEN]));
 
         let mut lines: Vec<String> = Vec::new();
         let mut line = String::new();

@@ -1,5 +1,4 @@
 [package]
-
 name = "ftp"
 version = "0.0.7"
 authors = ["Matt McCoy <mattnenterprise@yahoo.com>"]
