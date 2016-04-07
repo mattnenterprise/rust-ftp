@@ -24,7 +24,10 @@ lazy_static! {
 
     // This regex extracts file size from SIZE command response.
     static ref SIZE_RE: Regex = Regex::new(r"\s+(\d+)\s*$").unwrap();
+}
 
+#[cfg(feature = "secure")]
+lazy_static! {
     // Shared SSL context
     static ref SSL_CONTEXT: SslContext = match SslContext::new(SslMethod::Sslv23) {
         Ok(ctx) => ctx,
@@ -55,7 +58,7 @@ impl FtpStream {
     }
 
     /// Switch to secure mode if possible. If the connection is already
-    /// `secure` does nothing.
+    /// secure does nothing.
     #[cfg(feature = "secure")]
     pub fn secure(mut self) -> Result<FtpStream> {
         let secured = self.reader.get_ref().is_ssl();
@@ -97,7 +100,8 @@ impl FtpStream {
         }
     }
 
-    /// Switch to insecure mode. If the connection is already `insecure` does nothing.
+    /// Switch to insecure mode. If the connection is already
+    /// insecure does nothing.
     #[cfg(feature = "secure")]
     pub fn insecure(mut self) -> Result<FtpStream> {
         let secured = self.reader.get_ref().is_ssl();
@@ -197,27 +201,37 @@ impl FtpStream {
                     // the peer might not do a full accept (with SSL handshake if PROT P
                     try!(self.write_str(cmd));
 
-                    match TcpStream::connect(&*addr) {
-                        Ok(stream) => {
-                            if self.reader.get_ref().is_ssl() {
-                                // Secure the connection
-                                let ssl = match Ssl::new(&SSL_CONTEXT) {
-                                    Ok(ssl) => ssl,
-                                    Err(e) => return Err(Error::new(ErrorKind::Other, e))
-                                };
+                    if cfg!(feature = "secure") {
+                        // Secure feature is enabled
+                        match TcpStream::connect(&*addr) {
+                            Ok(stream) => {
+                                if self.reader.get_ref().is_ssl() {
+                                    // Secure the connection
+                                    let ssl = match Ssl::new(&SSL_CONTEXT) {
+                                        Ok(ssl) => ssl,
+                                        Err(e) => return Err(Error::new(ErrorKind::Other, e))
+                                    };
 
-                                match SslStream::connect(ssl, stream) {
-                                    Ok(stream) => {
-                                        Ok(DataStream::Ssl(stream))
-                                    },
-                                    Err(e) => Err(Error::new(ErrorKind::Other, e))
+                                    match SslStream::connect(ssl, stream) {
+                                        Ok(stream) => {
+                                            Ok(DataStream::Ssl(stream))
+                                        },
+                                        Err(e) => Err(Error::new(ErrorKind::Other, e))
+                                    }
                                 }
-                            }
-                            else {
-                                Ok(DataStream::Tcp(stream))
-                            }
-                        },
-                        Err(e) => Err(e)
+                                else {
+                                    Ok(DataStream::Tcp(stream))
+                                }
+                            },
+                            Err(e) => Err(e)
+                        }
+                    }
+                    else {
+                        // Secure feature is disabled
+                        match TcpStream::connect(&*addr) {
+                            Ok(stream) => Ok(DataStream::Tcp(stream)),
+                            Err(e) => Err(e)
+                        }
                     }
                 },
                 None => {

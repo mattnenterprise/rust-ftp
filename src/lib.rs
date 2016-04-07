@@ -15,6 +15,31 @@
 //! let _ = ftp_stream.quit();
 //! ```
 //!
+//! ### FTPS
+//!
+//! The client supports FTPS on demand. To enable it the client should be
+//! compiled with feature `openssl` enabled what requires
+//! [openssl](https://crates.io/crates/openssl) dependency.
+//!
+//! The client uses explicit mode for connecting FTPS what means you should
+//! connect the server as usually and then switch to the secure mode (TLS is used).
+//!
+//! ### FTPS Usage
+//!
+//! ```rust
+//! use ftp::FtpStream;
+//! let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
+//! // Switch to the secure mode
+//! let mut ftp_stream = ftp_stream.secure();
+//! // Do all secret things
+//! // Switch back to the insecure mode (if required)
+//! let mut ftp_stream = ftp_stream.insecure();
+//! // Do all public things
+//! let _ = ftp_stream.quit();
+//! ```
+//!
+
+
 
 #[macro_use] extern crate lazy_static;
 extern crate regex;
