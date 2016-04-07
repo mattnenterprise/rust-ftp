@@ -13,6 +13,7 @@ path = "src/lib.rs"
 
 [features]
 secure = ["openssl"]
+debug_print = []
 
 [dependencies]
 lazy_static = "0.1"

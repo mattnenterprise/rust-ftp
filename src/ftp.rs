@@ -55,7 +55,7 @@ impl FtpStream {
     }
 
     /// Switch to secure mode if possible. If the connection is already
-    /// secure does nothing.
+    /// `secure` does nothing.
     #[cfg(feature = "secure")]
     pub fn secure(mut self) -> Result<FtpStream> {
         let secured = self.reader.get_ref().is_ssl();
@@ -89,7 +89,7 @@ impl FtpStream {
             try!(secured_ftp_tream.read_response(status::COMMAND_OK));
 
             // Change the level of data protectio to Private
-            let prot_command = String::from("PROT C\r\n");
+            let prot_command = String::from("PROT P\r\n");
             try!(secured_ftp_tream.write_str(&prot_command));
             try!(secured_ftp_tream.read_response(status::COMMAND_OK));
 
@@ -97,8 +97,7 @@ impl FtpStream {
         }
     }
 
-    /// Switch to insecure mode if possible. If the connection is already
-    /// insecure does nothing.
+    /// Switch to insecure mode. If the connection is already `insecure` does nothing.
     #[cfg(feature = "secure")]
     pub fn insecure(mut self) -> Result<FtpStream> {
         let secured = self.reader.get_ref().is_ssl();
@@ -115,11 +114,6 @@ impl FtpStream {
         else {
             Ok(self)
         }
-    }
-
-    fn write_str(&mut self, s: &str) -> Result<()> {
-        let stream = self.reader.get_mut();
-        return stream.write_fmt(format_args!("{}", s));
     }
 
     /// Log in to the FTP server.
@@ -186,7 +180,7 @@ impl FtpStream {
     }
 
     /// Runs the PASV command.
-    fn pasv(&mut self) -> Result<DataStream> {
+    fn pasv(&mut self, cmd: &str) -> Result<DataStream> {
         try!(self.write_str("PASV\r\n"));
 
         // PASV response format : 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2).
@@ -199,9 +193,29 @@ impl FtpStream {
                     let port = ((msb as u16) << 8) + lsb as u16;
                     let addr = format!("{}.{}.{}.{}:{}", oct1, oct2, oct3, oct4, port);
 
+                    // First send command, then open data connection otherwise
+                    // the peer might not do a full accept (with SSL handshake if PROT P
+                    try!(self.write_str(cmd));
+
                     match TcpStream::connect(&*addr) {
                         Ok(stream) => {
-                            Ok(DataStream::Tcp(stream))
+                            if self.reader.get_ref().is_ssl() {
+                                // Secure the connection
+                                let ssl = match Ssl::new(&SSL_CONTEXT) {
+                                    Ok(ssl) => ssl,
+                                    Err(e) => return Err(Error::new(ErrorKind::Other, e))
+                                };
+
+                                match SslStream::connect(ssl, stream) {
+                                    Ok(stream) => {
+                                        Ok(DataStream::Ssl(stream))
+                                    },
+                                    Err(e) => Err(Error::new(ErrorKind::Other, e))
+                                }
+                            }
+                            else {
+                                Ok(DataStream::Tcp(stream))
+                            }
                         },
                         Err(e) => Err(e)
                     }
@@ -236,9 +250,7 @@ impl FtpStream {
     /// Also you will have to read the response to make sure it has the correct value.
     pub fn get(&mut self, file_name: &str) -> Result<BufReader<DataStream>> {
         let retr_command = format!("RETR {}\r\n", file_name);
-        let data_stream = BufReader::new(try!(self.pasv()));
-
-        try!(self.write_str(&retr_command));
+        let data_stream = BufReader::new(try!(self.pasv(&retr_command)));
         self.read_response(status::ABOUT_TO_SEND).and_then(|_| Ok(data_stream))
     }
 
@@ -264,10 +276,8 @@ impl FtpStream {
     /// ```
     pub fn retr<F>(&mut self, filename: &str, reader: F) -> Result<()>
     where F: Fn(&mut Read) -> Result<()> {
-        let mut data_stream = BufReader::new(try!(self.pasv()));
-
         let retr_command = format!("RETR {}\r\n", filename);
-        try!(self.write_str(&retr_command));
+        let mut data_stream = BufReader::new(try!(self.pasv(&retr_command)));
         self.read_response_in(&[status::ABOUT_TO_SEND, status::ALREADY_OPEN]).and_then(|_| {
             let result = reader(&mut data_stream);
             drop(data_stream);
@@ -315,9 +325,7 @@ impl FtpStream {
 
     fn put_file<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         let stor_command = format!("STOR {}\r\n", filename);
-        let mut data_stream = BufWriter::new(try!(self.pasv()));
-
-        try!(self.write_str(&stor_command));
+        let mut data_stream = BufWriter::new(try!(self.pasv(&stor_command)));
         try!(self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND]));
 
         try!(copy(r, &mut data_stream));
@@ -333,9 +341,7 @@ impl FtpStream {
 
     /// Execute a command which returns list of strings in a separate stream
     fn list_command(&mut self, cmd: String, open_code: u32, close_code: u32) -> Result<Vec<String>> {
-        let mut data_stream = BufReader::new(try!(self.pasv()));
-
-        try!(self.write_str(&cmd));
+        let mut data_stream = BufReader::new(try!(self.pasv(&cmd)));
         try!(self.read_response_in(&[open_code, status::ALREADY_OPEN]));
 
         let mut lines: Vec<String> = Vec::new();
@@ -407,6 +413,16 @@ impl FtpStream {
         }
     }
 
+    fn write_str(&mut self, s: &str) -> Result<()> {
+        let stream = self.reader.get_mut();
+
+        if cfg!(feature = "debug_print") {
+            print!("CMD {}", s);
+        }
+
+        return stream.write_fmt(format_args!("{}", s));
+    }
+
     pub fn read_response(&mut self, expected_code: u32) -> Result<(u32, String)> {
         self.read_response_in(&[expected_code])
     }
@@ -415,6 +431,11 @@ impl FtpStream {
     pub fn read_response_in(&mut self, expected_code: &[u32]) -> Result<(u32, String)> {
         let mut line = String::new();
         try!(self.reader.read_line(&mut line));
+
+        if cfg!(feature = "debug_print") {
+            print!("FTP {}", line);
+        }
+
         if line.len() < 5 {
             return Err(Error::new(ErrorKind::Other, "error: could not read reply code".to_owned()))
         }
@@ -429,6 +450,10 @@ impl FtpStream {
         while line.len() < 5 || line[0..4] != expected {
             line.clear();
             try!(self.reader.read_line(&mut line));
+
+            if cfg!(feature = "debug_print") {
+                print!("FTP {}", line);
+            }
         }
 
         if expected_code.into_iter().any(|ec| code == *ec) {
