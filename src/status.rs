@@ -23,6 +23,7 @@ pub const EXTENDED_PASSIVE_MODE: u32       = 229;
 pub const LOGGED_IN: u32                   = 230;
 pub const LOGGED_OUT: u32                  = 231;
 pub const LOGOUT_ACK: u32                  = 232;
+pub const AUTH_OK: u32                     = 234;
 pub const REQUESTED_FILE_ACTION_OK: u32    = 250;
 pub const PATH_CREATED: u32                = 257;
 
