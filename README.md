@@ -5,6 +5,9 @@ FTP client for Rust
 
 [![Build Status](https://travis-ci.org/mattnenterprise/rust-ftp.svg)](https://travis-ci.org/mattnenterprise/rust-ftp)
 
+[Documentation](http://mattnenterprise.github.io/rust-ftp),
+[crates.io](https://crates.io/crates/ftp).
+
 ### Installation
 
 Add ftp via your `Cargo.toml`
