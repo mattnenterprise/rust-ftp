@@ -16,7 +16,7 @@ Add ftp via your `Cargo.toml`
 ftp = "*"
 ```
 
-FTPS support is disabled by default. To enable it activate feature `secure` in `Cargo.toml`.
+FTPS support is disabled by default. To enable it `secure` should be activated in `Cargo.toml`.
 ```toml
 [dependencies]
 ftp = { version = "*", features = ["secure"] }
