@@ -254,15 +254,28 @@ impl FtpStream {
         self.read_response(status::ABOUT_TO_SEND).and_then(|_| Ok(data_stream))
     }
 
+    /// Renames the file from_name to to_name
+    pub fn rename(&mut self, from_name: &str, to_name: &str) -> Result<()> {
+        let rnfr_command = format!("RNFR {}\r\n", from_name);
+        try!(self.write_str(&rnfr_command));
+
+        self.read_response(status::REQUEST_FILE_PENDING).and_then(|_| {
+            let rnto_command = format!("RNTO {}\r\n", to_name);
+            try!(self.write_str(&rnto_command));
+            try!(self.read_response(status::REQUESTED_FILE_ACTION_OK));
+            Ok(())
+        })
+    }
+
     /// The implementation of `RETR` command where `filename` is the name of the file
     /// to download from FTP and `reader` is the function which operates with the
     /// data stream opened.
     ///
     /// ```ignore
     /// let result = conn.retr("take_this.txt", |stream| {
-    ///   let mut file = File::create("store_here.txt").unwrap();  
+    ///   let mut file = File::create("store_here.txt").unwrap();
     ///   let mut buf = [0; 2048];
-    /// 
+    ///
     ///   loop {
     ///     match stream.read(&mut buf) {
     ///       Ok(0) => break,
@@ -270,7 +283,7 @@ impl FtpStream {
     ///       Err(err) => return Err(err)
     ///     };
     ///   }
-    /// 
+    ///
     ///   Ok(())
     /// });
     /// ```
