@@ -1,7 +1,5 @@
 language: rust
 rust:
-- nightly
-- beta
 # check it compiles on the latest stable compiler
 - stable
 before_install:
