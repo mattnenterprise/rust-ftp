@@ -186,7 +186,7 @@ impl FtpStream {
     }
 
     /// Runs the PASV command.
-    fn pasv(&mut self) -> Result<TcpStream> {
+    fn pasv(&mut self) -> Result<DataStream> {
         try!(self.write_str("PASV\r\n"));
 
         // PASV response format : 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2).
@@ -199,7 +199,12 @@ impl FtpStream {
                     let port = ((msb as u16) << 8) + lsb as u16;
                     let addr = format!("{}.{}.{}.{}:{}", oct1, oct2, oct3, oct4, port);
 
-                    TcpStream::connect(&*addr)
+                    match TcpStream::connect(&*addr) {
+                        Ok(stream) => {
+                            Ok(DataStream::Tcp(stream))
+                        },
+                        Err(e) => Err(e)
+                    }
                 },
                 None => {
                     Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)))
@@ -229,7 +234,7 @@ impl FtpStream {
     /// This method is a more complicated way to retrieve a file.
     /// The reader returned should be dropped.
     /// Also you will have to read the response to make sure it has the correct value.
-    pub fn get(&mut self, file_name: &str) -> Result<BufReader<TcpStream>> {
+    pub fn get(&mut self, file_name: &str) -> Result<BufReader<DataStream>> {
         let retr_command = format!("RETR {}\r\n", file_name);
         let data_stream = BufReader::new(try!(self.pasv()));
 
