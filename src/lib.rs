@@ -28,7 +28,7 @@
 //!
 //! ### FTPS Usage
 //!
-//! ```rust
+//! ```no_run
 //! use ftp::FtpStream;
 //! let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
 //! // Switch to the secure mode
