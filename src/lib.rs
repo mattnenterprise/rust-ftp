@@ -23,6 +23,8 @@
 //!
 //! The client uses explicit mode for connecting FTPS what means you should
 //! connect the server as usually and then switch to the secure mode (TLS is used).
+//! For better security it's the good practice to switch to the secure mode
+//! before authentication.
 //!
 //! ### FTPS Usage
 //!
@@ -31,14 +33,14 @@
 //! let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
 //! // Switch to the secure mode
 //! let mut ftp_stream = ftp_stream.secure();
-//! // Do all secret things
+//! ftp_stream.login("anonymous", "anonymous").unwrap();
+//! // Do other secret stuff
 //! // Switch back to the insecure mode (if required)
 //! let mut ftp_stream = ftp_stream.insecure();
-//! // Do all public things
+//! // Do all public stuff
 //! let _ = ftp_stream.quit();
 //! ```
 //!
-
 
 
 #[macro_use] extern crate lazy_static;
