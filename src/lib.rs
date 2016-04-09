@@ -32,11 +32,11 @@
 //! use ftp::FtpStream;
 //! let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
 //! // Switch to the secure mode
-//! let mut ftp_stream = ftp_stream.secure();
+//! let (mut ftp_stream, _) = ftp_stream.secure();
 //! ftp_stream.login("anonymous", "anonymous").unwrap();
 //! // Do other secret stuff
 //! // Switch back to the insecure mode (if required)
-//! let mut ftp_stream = ftp_stream.insecure();
+//! let (mut ftp_stream, _) = ftp_stream.insecure();
 //! // Do all public stuff
 //! let _ = ftp_stream.quit();
 //! ```

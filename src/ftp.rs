@@ -58,38 +58,47 @@ impl FtpStream {
     /// Switch to secure mode if possible. If the connection is already
     /// secure does nothing.
     ///
+    /// ## Panics
+    ///
+    /// Panics if the plain TCP connection cannot be switched to TLS mode.
+    ///
     /// ## Example
     ///
     /// ```
     /// use ftp::FtpStream;
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// // Switch to the secure mode
-    /// let mut ftp_stream = ftp_stream.secure().unwrap();
+    /// let (mut ftp_stream, _) = ftp_stream.secure();
     /// // Do all secret things
     /// let _ = ftp_stream.quit();
     /// ```
     ///
     #[cfg(feature = "secure")]
-    pub fn secure(mut self) -> Result<FtpStream> {
+    pub fn secure(mut self) -> (FtpStream, Result<()>) {
         let secured = self.reader.get_ref().is_ssl();
         if secured {
-            Ok(self)
+            (self, Ok(()))
         }
         else {
             // Ask the server to start securing data
             let auth_command = String::from("AUTH TLS\r\n");
-            try!(self.write_str(&auth_command));
-            try!(self.read_response(status::AUTH_OK));
+            if let Err(e) = self.write_str(&auth_command) {
+                return (self, Err(e));
+            }
+
+            if let Err(e) = self.read_response(status::AUTH_OK) {
+                return (self, Err(e));
+            }
 
             // Initialize SSL and make the opened stream secured
             let ssl = match Ssl::new(&SSL_CONTEXT) {
                 Ok(ssl) => ssl,
-                Err(e) => return Err(Error::new(ErrorKind::Other, e))
+                Err(e) => return (self, Err(Error::new(ErrorKind::Other, e)))
             };
 
             let stream = match SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream()) {
                 Ok(stream) => stream,
-                Err(e) => return Err(Error::new(ErrorKind::Other, e))
+                Err(e) => panic!("error: cannot open SSL connection: {}", e)
             };
 
             let mut secured_ftp_tream = FtpStream {
@@ -98,15 +107,25 @@ impl FtpStream {
 
             // Set protection buffer size
             let pbsz_command = format!("PBSZ 0\r\n");
-            try!(secured_ftp_tream.write_str(&pbsz_command));
-            try!(secured_ftp_tream.read_response(status::COMMAND_OK));
+            if let Err(e) = secured_ftp_tream.write_str(&pbsz_command) {
+                return (secured_ftp_tream, Err(e));
+            }
+
+            if let Err(e) = secured_ftp_tream.read_response(status::COMMAND_OK) {
+                return (secured_ftp_tream, Err(e));
+            }
 
             // Change the level of data protectio to Private
             let prot_command = String::from("PROT P\r\n");
-            try!(secured_ftp_tream.write_str(&prot_command));
-            try!(secured_ftp_tream.read_response(status::COMMAND_OK));
+            if let Err(e) = secured_ftp_tream.write_str(&prot_command) {
+                return (secured_ftp_tream, Err(e));
+            }
 
-            Ok(secured_ftp_tream)
+            if let Err(e) = secured_ftp_tream.read_response(status::COMMAND_OK) {
+                return (secured_ftp_tream, Err(e));
+            }
+
+            (secured_ftp_tream, Ok(()))
         }
     }
 
@@ -119,29 +138,36 @@ impl FtpStream {
     /// use ftp::FtpStream;
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// // Switch to the secure mode
-    /// let mut ftp_stream = ftp_stream.secure().unwrap();
+    /// let (mut ftp_stream, _) = ftp_stream.secure();
     /// // Do all secret things
     /// // Switch back to the insecure mode
-    /// let mut ftp_stream = ftp_stream.insecure().unwrap();
+    /// let (mut ftp_stream, _) = ftp_stream.insecure();
     /// // Do all public things
     /// let _ = ftp_stream.quit();
     /// ```
     ///
     #[cfg(feature = "secure")]
-    pub fn insecure(mut self) -> Result<FtpStream> {
+    pub fn insecure(mut self) -> (FtpStream, Result<()>) {
         let secured = self.reader.get_ref().is_ssl();
         if secured {
             // Ask the server to stop securing data
             let ccc_command = String::from("CCC\r\n");
-            try!(self.write_str(&ccc_command));
-            try!(self.read_response(status::COMMAND_OK));
+            if let Err(e) = self.write_str(&ccc_command) {
+                return (self, Err(e));
+            }
 
-            Ok(FtpStream {
+            if let Err(e) = self.read_response(status::COMMAND_OK) {
+                return (self, Err(e));
+            }
+
+            let plain_ftp_stream = FtpStream {
                 reader: BufReader::new(DataStream::Tcp(self.reader.into_inner().into_tcp_stream())),
-            })
+            };
+
+            (plain_ftp_stream, Ok(()))
         }
         else {
-            Ok(self)
+            (self, Ok(()))
         }
     }
 
