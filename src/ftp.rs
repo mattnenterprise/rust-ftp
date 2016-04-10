@@ -93,7 +93,7 @@ impl FtpStream {
             // Initialize SSL and make the opened stream secured
             let ssl = match Ssl::new(&SSL_CONTEXT) {
                 Ok(ssl) => ssl,
-                Err(e) => return (self, Err(Error::new(ErrorKind::Other, e)))
+                Err(e) => panic!("error: cannot create SSL context: {}", e)
             };
 
             let stream = match SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream()) {
