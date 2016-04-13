@@ -16,6 +16,12 @@ Add ftp via your `Cargo.toml`
 ftp = "*"
 ```
 
+FTPS support is disabled by default. To enable it `secure` should be activated in `Cargo.toml`.
+```toml
+[dependencies]
+ftp = { version = "*", features = ["secure"] }
+```
+
 ### Usage
 ```rs
 extern crate ftp;

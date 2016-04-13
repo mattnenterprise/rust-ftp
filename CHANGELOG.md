@@ -32,6 +32,19 @@ Possible log types:
 - [added] The implementation of MDTM command. See method `FtpStream::mdtm`.
 - [added] The implementation of SIZE command. See method `FtpStream::size`.
 
+### [Unreleased from branch retr_and_type]
+- [added] The implementation of RETR command. See method `FtpStream::retr`.
+- [added] The implementation of TYPE command. See method `FtpStream::transfer_type`.
+
+### [Unreleased from branch ftps_support]
+- [added] Feature `secure` to enable FTPS support. Disabled be default.
+- [added] Feature `debug_print` to print command and responses to STDOUT. Disabled be default.
+- [added] DataStream which hides the underlying secure or insecure TCP stream.
+- [changed] Methods return `DataStream` instead of `TcpStream`.
+- [changed] Method `pasv` returns only IP and port and do not open new TCP stream.
+- [added] Method `data_command` which issues `pasv` to open the new `DataStream`.
+- [added] Methods `secure` and `insecure` to switch between secure and insecure modes.
+
 
 ### [v0.0.7] (2016-01-11)
 

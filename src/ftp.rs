@@ -1,10 +1,14 @@
 use std::io::{Error, ErrorKind, Read, Result, BufRead, BufReader, BufWriter, Cursor, Write, copy};
-use std::net::TcpStream;
+use std::net::{TcpStream, SocketAddr};
 use std::string::String;
+use std::str::FromStr;
 use std::net::ToSocketAddrs;
 use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
+#[cfg(feature = "secure")]
+use openssl::ssl::{Ssl, SslContext, SslMethod, SslStream};
+use super::data_stream::DataStream;
 use super::status;
 use super::types::FileType;
 
@@ -20,27 +24,151 @@ lazy_static! {
     static ref SIZE_RE: Regex = Regex::new(r"\s+(\d+)\s*$").unwrap();
 }
 
+#[cfg(feature = "secure")]
+lazy_static! {
+    // Shared SSL context
+    static ref SSL_CONTEXT: SslContext = match SslContext::new(SslMethod::Sslv23) {
+        Ok(ctx) => ctx,
+        Err(e) => panic!("{}", e)
+    };
+}
+
 /// Stream to interface with the FTP server. This interface is only for the command stream.
 #[derive(Debug)]
 pub struct FtpStream {
-    reader: BufReader<TcpStream>
+    reader: BufReader<DataStream>,
 }
 
 impl FtpStream {
     /// Creates an FTP Stream.
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
-        let reader = BufReader::new(try!(TcpStream::connect(addr)));
-        let mut ftp_stream = FtpStream {
-            reader: reader
-        };
+        match TcpStream::connect(addr) {
+            Ok(stream) => {
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Tcp(stream)),
+                };
 
-        try!(ftp_stream.read_response(status::READY));
-        Ok(ftp_stream)
+                try!(ftp_stream.read_response(status::READY));
+                Ok(ftp_stream)
+            },
+            Err(e) => Err(e)
+        }
     }
 
-    fn write_str(&mut self, s: &str) -> Result<()> {
-        let stream = self.reader.get_mut();
-        return stream.write_fmt(format_args!("{}", s));
+    /// Switch to secure mode if possible. If the connection is already
+    /// secure does nothing.
+    ///
+    /// ## Panics
+    ///
+    /// Panics if the plain TCP connection cannot be switched to TLS mode.
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// use ftp::FtpStream;
+    /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// // Switch to the secure mode
+    /// let (mut ftp_stream, _) = ftp_stream.secure();
+    /// // Do all secret things
+    /// let _ = ftp_stream.quit();
+    /// ```
+    ///
+    #[cfg(feature = "secure")]
+    pub fn secure(mut self) -> (FtpStream, Result<()>) {
+        let secured = self.reader.get_ref().is_ssl();
+        if secured {
+            (self, Ok(()))
+        }
+        else {
+            // Ask the server to start securing data
+            let auth_command = String::from("AUTH TLS\r\n");
+            if let Err(e) = self.write_str(&auth_command) {
+                return (self, Err(e));
+            }
+
+            if let Err(e) = self.read_response(status::AUTH_OK) {
+                return (self, Err(e));
+            }
+
+            // Initialize SSL and make the opened stream secured
+            let ssl = match Ssl::new(&SSL_CONTEXT) {
+                Ok(ssl) => ssl,
+                Err(e) => panic!("error: cannot create SSL context: {}", e)
+            };
+
+            let stream = match SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream()) {
+                Ok(stream) => stream,
+                Err(e) => panic!("error: cannot open SSL connection: {}", e)
+            };
+
+            let mut secured_ftp_tream = FtpStream {
+                reader: BufReader::new(DataStream::Ssl(stream)),
+            };
+
+            // Set protection buffer size
+            let pbsz_command = format!("PBSZ 0\r\n");
+            if let Err(e) = secured_ftp_tream.write_str(&pbsz_command) {
+                return (secured_ftp_tream, Err(e));
+            }
+
+            if let Err(e) = secured_ftp_tream.read_response(status::COMMAND_OK) {
+                return (secured_ftp_tream, Err(e));
+            }
+
+            // Change the level of data protectio to Private
+            let prot_command = String::from("PROT P\r\n");
+            if let Err(e) = secured_ftp_tream.write_str(&prot_command) {
+                return (secured_ftp_tream, Err(e));
+            }
+
+            if let Err(e) = secured_ftp_tream.read_response(status::COMMAND_OK) {
+                return (secured_ftp_tream, Err(e));
+            }
+
+            (secured_ftp_tream, Ok(()))
+        }
+    }
+
+    /// Switch to insecure mode. If the connection is already
+    /// insecure does nothing.
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// use ftp::FtpStream;
+    /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// // Switch to the secure mode
+    /// let (mut ftp_stream, _) = ftp_stream.secure();
+    /// // Do all secret things
+    /// // Switch back to the insecure mode
+    /// let (mut ftp_stream, _) = ftp_stream.insecure();
+    /// // Do all public things
+    /// let _ = ftp_stream.quit();
+    /// ```
+    ///
+    #[cfg(feature = "secure")]
+    pub fn insecure(mut self) -> (FtpStream, Result<()>) {
+        let secured = self.reader.get_ref().is_ssl();
+        if secured {
+            // Ask the server to stop securing data
+            let ccc_command = String::from("CCC\r\n");
+            if let Err(e) = self.write_str(&ccc_command) {
+                return (self, Err(e));
+            }
+
+            if let Err(e) = self.read_response(status::COMMAND_OK) {
+                return (self, Err(e));
+            }
+
+            let plain_ftp_stream = FtpStream {
+                reader: BufReader::new(DataStream::Tcp(self.reader.into_inner().into_tcp_stream())),
+            };
+
+            (plain_ftp_stream, Ok(()))
+        }
+        else {
+            (self, Ok(()))
+        }
     }
 
     /// Log in to the FTP server.
@@ -107,7 +235,7 @@ impl FtpStream {
     }
 
     /// Runs the PASV command.
-    fn pasv(&mut self) -> Result<TcpStream> {
+    fn pasv(&mut self) -> Result<SocketAddr> {
         try!(self.write_str("PASV\r\n"));
 
         // PASV response format : 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2).
@@ -119,13 +247,72 @@ impl FtpStream {
                     let (msb, lsb) = (caps[5].parse::<u8>().unwrap(), caps[6].parse::<u8>().unwrap());
                     let port = ((msb as u16) << 8) + lsb as u16;
                     let addr = format!("{}.{}.{}.{}:{}", oct1, oct2, oct3, oct4, port);
-                    TcpStream::connect(&*addr)
+
+                    match SocketAddr::from_str(&addr) {
+                        Ok(addr) => Ok(addr),
+                        Err(e) => Err(Error::new(ErrorKind::Other, e))
+                    }
                 },
                 None => {
                     Err(Error::new(ErrorKind::InvalidData, format!("Invalid PASV response: {}", line)))
                 }
             }
         })
+    }
+
+    // Execute command which send data back in a separate stream
+    #[cfg(not(feature = "secure"))]
+    fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
+        let addr = self.pasv();
+        match addr {
+            Ok(addr) => {
+                // First send command, then open data connection otherwise
+                // the peer might not do a full accept (with SSL handshake if PROT P
+                try!(self.write_str(cmd));
+
+                match TcpStream::connect(addr) {
+                    Ok(stream) => Ok(DataStream::Tcp(stream)),
+                    Err(e) => Err(e)
+                }
+            },
+            Err(e) => Err(e)
+        }
+    }
+
+    #[cfg(feature = "secure")]
+    fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
+        let addr = self.pasv();
+        match addr {
+            Ok(addr) => {
+                // First send command, then open data connection otherwise
+                // the peer might not do a full accept (with SSL handshake if PROT P
+                try!(self.write_str(cmd));
+
+                match TcpStream::connect(addr) {
+                    Ok(stream) => {
+                        if self.reader.get_ref().is_ssl() {
+                            // Secure the connection
+                            let ssl = match Ssl::new(&SSL_CONTEXT) {
+                                Ok(ssl) => ssl,
+                                Err(e) => return Err(Error::new(ErrorKind::Other, e))
+                            };
+
+                            match SslStream::connect(ssl, stream) {
+                                Ok(stream) => {
+                                    Ok(DataStream::Ssl(stream))
+                                },
+                                Err(e) => Err(Error::new(ErrorKind::Other, e))
+                            }
+                        }
+                        else {
+                            Ok(DataStream::Tcp(stream))
+                        }
+                    },
+                    Err(e) => Err(e)
+                }
+            },
+            Err(e) => Err(e)
+        }
     }
 
     /// Sets the type of file to be transferred. That is the implementation
@@ -149,11 +336,9 @@ impl FtpStream {
     /// This method is a more complicated way to retrieve a file.
     /// The reader returned should be dropped.
     /// Also you will have to read the response to make sure it has the correct value.
-    pub fn get(&mut self, file_name: &str) -> Result<BufReader<TcpStream>> {
+    pub fn get(&mut self, file_name: &str) -> Result<BufReader<DataStream>> {
         let retr_command = format!("RETR {}\r\n", file_name);
-        let data_stream = BufReader::new(try!(self.pasv()));
-
-        try!(self.write_str(&retr_command));
+        let data_stream = BufReader::new(try!(self.data_command(&retr_command)));
         self.read_response(status::ABOUT_TO_SEND).and_then(|_| Ok(data_stream))
     }
 
@@ -192,11 +377,9 @@ impl FtpStream {
     /// ```
     pub fn retr<F>(&mut self, filename: &str, reader: F) -> Result<()>
     where F: Fn(&mut Read) -> Result<()> {
-        let mut data_stream = BufReader::new(try!(self.pasv()));
-
         let retr_command = format!("RETR {}\r\n", filename);
-        try!(self.write_str(&retr_command));
-        self.read_response(status::ABOUT_TO_SEND).and_then(|_| {
+        let mut data_stream = BufReader::new(try!(self.data_command(&retr_command)));
+        self.read_response_in(&[status::ABOUT_TO_SEND, status::ALREADY_OPEN]).and_then(|_| {
             let result = reader(&mut data_stream);
             drop(data_stream);
             try!(self.read_response(status::CLOSING_DATA_CONNECTION));
@@ -243,9 +426,7 @@ impl FtpStream {
 
     fn put_file<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         let stor_command = format!("STOR {}\r\n", filename);
-        let mut data_stream = BufWriter::new(try!(self.pasv()));
-
-        try!(self.write_str(&stor_command));
+        let mut data_stream = BufWriter::new(try!(self.data_command(&stor_command)));
         try!(self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND]));
 
         try!(copy(r, &mut data_stream));
@@ -261,10 +442,8 @@ impl FtpStream {
 
     /// Execute a command which returns list of strings in a separate stream
     fn list_command(&mut self, cmd: String, open_code: u32, close_code: u32) -> Result<Vec<String>> {
-        let mut data_stream = BufReader::new(try!(self.pasv()));
-
-        try!(self.write_str(&cmd));
-        try!(self.read_response(open_code));
+        let mut data_stream = BufReader::new(try!(self.data_command(&cmd)));
+        try!(self.read_response_in(&[open_code, status::ALREADY_OPEN]));
 
         let mut lines: Vec<String> = Vec::new();
         let mut line = String::new();
@@ -335,6 +514,16 @@ impl FtpStream {
         }
     }
 
+    fn write_str(&mut self, s: &str) -> Result<()> {
+        let stream = self.reader.get_mut();
+
+        if cfg!(feature = "debug_print") {
+            print!("CMD {}", s);
+        }
+
+        return stream.write_fmt(format_args!("{}", s));
+    }
+
     pub fn read_response(&mut self, expected_code: u32) -> Result<(u32, String)> {
         self.read_response_in(&[expected_code])
     }
@@ -343,6 +532,11 @@ impl FtpStream {
     pub fn read_response_in(&mut self, expected_code: &[u32]) -> Result<(u32, String)> {
         let mut line = String::new();
         try!(self.reader.read_line(&mut line));
+
+        if cfg!(feature = "debug_print") {
+            print!("FTP {}", line);
+        }
+
         if line.len() < 5 {
             return Err(Error::new(ErrorKind::Other, "error: could not read reply code".to_owned()))
         }
@@ -357,6 +551,10 @@ impl FtpStream {
         while line.len() < 5 || line[0..4] != expected {
             line.clear();
             try!(self.reader.read_line(&mut line));
+
+            if cfg!(feature = "debug_print") {
+                print!("FTP {}", line);
+            }
         }
 
         if expected_code.into_iter().any(|ec| code == *ec) {
