@@ -6,7 +6,7 @@ documentation = "http://mattnenterprise.github.io/rust-ftp"
 repository = "https://github.com/mattnenterprise/rust-ftp"
 description = "FTP client for Rust"
 readme = "README.md"
-license = "MIT / Apache-2.0"
+license = "Apache-2.0/MIT"
 keywords = ["ftp"]
 
 [lib]
