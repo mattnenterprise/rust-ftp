@@ -23,7 +23,7 @@ ftp = { version = "*", features = ["secure"] }
 ```
 
 ### Usage
-```rs
+```rust
 extern crate ftp;
 
 use std::str;
