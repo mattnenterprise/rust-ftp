@@ -1,11 +1,13 @@
 [package]
 name = "ftp"
-version = "0.0.7"
+version = "0.0.8"
 authors = ["Matt McCoy <mattnenterprise@yahoo.com>"]
+documentation = "http://mattnenterprise.github.io/rust-ftp"
 repository = "https://github.com/mattnenterprise/rust-ftp"
 description = "FTP client for Rust"
 readme = "README.md"
-license = "MIT OR Apache-2.0"
+license = "MIT / Apache-2.0"
+keywords = ["ftp"]
 
 [lib]
 name ="ftp"
