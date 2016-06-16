@@ -4,9 +4,9 @@ rust-ftp
 FTP client for Rust
 
 [![Build Status](https://travis-ci.org/mattnenterprise/rust-ftp.svg)](https://travis-ci.org/mattnenterprise/rust-ftp)
+[![crates.io](http://meritbadge.herokuapp.com/ftp)](https://crates.io/crates/ftp)
 
-[Documentation](http://mattnenterprise.github.io/rust-ftp),
-[crates.io](https://crates.io/crates/ftp).
+[Documentation](http://mattnenterprise.github.io/rust-ftp)
 
 ### Installation
 
