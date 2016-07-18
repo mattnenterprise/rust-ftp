@@ -31,7 +31,7 @@ use std::io::Cursor;
 use ftp::FtpStream;
 
 fn main() {
-	let mut ftp_stream = match FtpStream::connect("127.0.0.1", 21) {
+	let mut ftp_stream = match FtpStream::connect("127.0.0.1:21") {
         Ok(s) => s,
         Err(e) => panic!("{}", e)
     };
@@ -65,7 +65,7 @@ fn main() {
     //Store a file
     let file_data = format!("Some awesome file data man!!");
     let reader: &mut Cursor<Vec<u8>> = &mut Cursor::new(file_data.into_bytes());
-    match ftp_stream.stor("my_random_file.txt", reader) {
+    match ftp_stream.put("my_random_file.txt", reader) {
         Ok(_) => (),
         Err(e) => panic!("{}", e)
     }
