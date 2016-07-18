@@ -42,7 +42,7 @@ fn main() {
     let _ = ftp_stream.cwd("test_data").unwrap();
 
     // Retrieve (GET) a file from the FTP server in the current working directory.
-    let remote_file = match ftp_stream.simple_retr("ftpext-charter.txt").unwrap()
+    let remote_file = ftp_stream.simple_retr("ftpext-charter.txt").unwrap();
     println!("Read file with contents\n{}\n", str::from_utf8(&remote_file.into_inner()).unwrap());
 
     // Store (PUT) a file from the client to the current working directory of the server.
