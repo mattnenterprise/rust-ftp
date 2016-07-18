@@ -36,10 +36,10 @@ fn main() {
     let _ ftp_stream.login("username", "password").unwrap();
 
     // Get the current directory that the client will be reading from and writing to.
-    println!("Current directory: {}", ftp_stream.current_dir().unwrap());
+    println!("Current directory: {}", ftp_stream.pwd().unwrap());
     
     // Change into a new directory, relative to the one we are currently in.
-    let _ = ftp_stream.change_dir("test_data").unwrap();
+    let _ = ftp_stream.cwd("test_data").unwrap();
 
     // Retrieve (GET) a file from the FTP server in the current working directory.
     let remote_file = match ftp_stream.simple_retr("ftpext-charter.txt").unwrap()
