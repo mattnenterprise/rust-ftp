@@ -32,8 +32,8 @@ use ftp::FtpStream;
 
 fn main() {
     // Create a connection to an FTP server and authenticate to it.
-	  let mut ftp_stream = match FtpStream::connect("127.0.0.1:21").unwrap();
-    let _ ftp_stream.login("username", "password").unwrap();
+	  let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
+    let _ = ftp_stream.login("username", "password").unwrap();
 
     // Get the current directory that the client will be reading from and writing to.
     println!("Current directory: {}", ftp_stream.pwd().unwrap());
