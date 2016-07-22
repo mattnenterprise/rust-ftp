@@ -82,7 +82,7 @@ impl FtpStream {
         };
         self.secure_with_ssl(ssl)
     }
-   
+
     /// Switch to a secure mode if possible, using a provided SSL configuration.
     /// This method does nothing if the connect is already secured.
     ///
@@ -443,6 +443,14 @@ impl FtpStream {
     pub fn rmdir(&mut self, pathname: &str) -> Result<()> {
         let rmd_command = format!("RMD {}\r\n", pathname);
         try!(self.write_str(&rmd_command));
+        try!(self.read_response(status::REQUESTED_FILE_ACTION_OK));
+        Ok(())
+    }
+
+    /// Remove the remote file from the server.
+    pub fn rm(&mut self, filename: &str) -> Result<()> {
+        let rm_command = format!("DELE {}\r\n", filename);
+        try!(self.write_str(&rm_command));
         try!(self.read_response(status::REQUESTED_FILE_ACTION_OK));
         Ok(())
     }
