@@ -31,45 +31,26 @@ use std::io::Cursor;
 use ftp::FtpStream;
 
 fn main() {
-	let mut ftp_stream = match FtpStream::connect("127.0.0.1", 21) {
-        Ok(s) => s,
-        Err(e) => panic!("{}", e)
-    };
+    // Create a connection to an FTP server and authenticate to it.
+    let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
+    let _ = ftp_stream.login("username", "password").unwrap();
 
-    match ftp_stream.login("username", "password") {
-        Ok(_) => (),
-        Err(e) => panic!("{}", e)
-    }
+    // Get the current directory that the client will be reading from and writing to.
+    println!("Current directory: {}", ftp_stream.pwd().unwrap());
+    
+    // Change into a new directory, relative to the one we are currently in.
+    let _ = ftp_stream.cwd("test_data").unwrap();
 
-    match ftp_stream.current_dir() {
-        Ok(dir) => println!("{}", dir),
-        Err(e) => panic!("{}", e)
-    }
+    // Retrieve (GET) a file from the FTP server in the current working directory.
+    let remote_file = ftp_stream.simple_retr("ftpext-charter.txt").unwrap();
+    println!("Read file with contents\n{}\n", str::from_utf8(&remote_file.into_inner()).unwrap());
 
-    match ftp_stream.change_dir("test_data") {
-        Ok(_) => (),
-        Err(e) => panic!("{}", e)
-    }
+    // Store (PUT) a file from the client to the current working directory of the server.
+    let mut reader = Cursor::new("Hello from the Rust \"ftp\" crate!".as_bytes());
+    let _ = ftp_stream.put("greeting.txt", &mut reader);
+    println!("Successfully wrote greeting.txt");
 
-    //An easy way to retreive a file
-    let remote_file = match ftp_stream.simple_retr("ftpext-charter.txt") {
-        Ok(file) => file,
-        Err(e) => panic!("{}", e)
-    };
-
-    match str::from_utf8(&remote_file.into_inner()) {
-        Ok(s) => print!("{}", s),
-        Err(e) => panic!("Error reading file data: {}", e)
-    };
-
-    //Store a file
-    let file_data = format!("Some awesome file data man!!");
-    let reader: &mut Cursor<Vec<u8>> = &mut Cursor::new(file_data.into_bytes());
-    match ftp_stream.stor("my_random_file.txt", reader) {
-        Ok(_) => (),
-        Err(e) => panic!("{}", e)
-    }
-
+    // Terminate the connection to the server.
     let _ = ftp_stream.quit();
 }
 
