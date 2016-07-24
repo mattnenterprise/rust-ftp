@@ -1,5 +1,14 @@
 //! The set of valid values for FTP commands
 
+use std::error::Error;
+use std::fmt;
+
+/// `FtpError` is a library-global error type to describe the different kinds of
+/// errors that might occur while using FTP.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FtpError {
+    ConnectionError(std::io::Error),
+}
 
 /// Text Format Control used in `TYPE` command
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -49,6 +58,28 @@ impl ToString for FileType {
             &FileType::Ebcdic(ref fc) => format!("E {}", fc.to_string()),
             &FileType::Image | &FileType::Binary => String::from("I"),
             &FileType::Local(ref bits) => format!("L {}", bits),
+        }
+    }
+}
+
+impl fmt::Display for FtpError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            FtpError::ConnectionError(ref ioerr) => write!(f, "FTP ConnectionError: {}", ioerr),
+        }
+    }
+}
+
+impl Error for FtpError {
+    fn description(&self) -> &str {
+        match *self {
+            FtpError::ConnectionError(ref ioerr) => ioerr.description(),
+        }
+    }
+
+    fn cause(&self) -> Option<&Error> {
+        match *self {
+            FtpError::ConnectionError(ref ioerr) => Some(ioerr),
         }
     }
 }
