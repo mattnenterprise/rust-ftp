@@ -7,7 +7,7 @@ use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
 #[cfg(feature = "secure")]
-use openssl::ssl::{Ssl, SslContext, SslMethod, SslStream};
+use openssl::ssl::{Ssl, SslContext, SslMethod, SslStream, IntoSsl};
 use super::data_stream::DataStream;
 use super::status;
 use super::types::FileType;
@@ -75,6 +75,35 @@ impl FtpStream {
     ///
     #[cfg(feature = "secure")]
     pub fn secure(mut self) -> (FtpStream, Result<()>) {
+        // Initialize SSL with a default context and make secure the stream.
+        let ssl = match Ssl::new(&SSL_CONTEXT) {
+            Ok(ssl) => ssl,
+            Err(e) => panic!("error: cannot create SSL context: {}", e)
+        };
+        self.secure_with_ssl(ssl)
+    }
+   
+    /// Switch to a secure mode if possible, using a provided SSL configuration.
+    /// This method does nothing if the connect is already secured.
+    ///
+    /// ## Panics
+    ///
+    /// Panics if the plain TCP connection cannot be switched to TLS mode.
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// use ftp::FtpStream;
+    /// use openssl::ssl::*;
+    ///
+    /// // Create an SslContext with a custom cert.
+    /// let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
+    /// let _ = ctx.set_CA_file("/path/to/a/cert.pem").unwrap();
+    /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// let (mut ftp_stream, _) = ftp_stream.secure_with_ssl(ctx);
+    /// ```
+    #[cfg(feature = "secure")]
+    pub fn secure_with_ssl<S: IntoSsl>(mut self, ssl: S) -> (FtpStream, Result<()>) {
         let secured = self.reader.get_ref().is_ssl();
         if secured {
             (self, Ok(()))
@@ -89,12 +118,6 @@ impl FtpStream {
             if let Err(e) = self.read_response(status::AUTH_OK) {
                 return (self, Err(e));
             }
-
-            // Initialize SSL and make the opened stream secured
-            let ssl = match Ssl::new(&SSL_CONTEXT) {
-                Ok(ssl) => ssl,
-                Err(e) => panic!("error: cannot create SSL context: {}", e)
-            };
 
             let stream = match SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream()) {
                 Ok(stream) => stream,
