@@ -8,11 +8,11 @@ use ftp::FtpStream;
 #[test]
 fn test_ftp() {
     let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    ftp_stream.login("anonymous", "rust-ftp@github.com").unwrap_or_else(|e| panic!("{}", e));
+    let _ = ftp_stream.login("username", "password").unwrap();
 
-    ftp_stream.mkdir("test_folder").unwrap();
-    ftp_stream.cwd("test_folder").unwrap();
-    assert_eq!(ftp_stream.pwd().unwrap(), "/test_folder");
+    ftp_stream.mkdir("test_dir").unwrap();
+    ftp_stream.cwd("test_dir").unwrap();
+    assert!(ftp_stream.pwd().unwrap().ends_with("/test_dir"));
 
     // Store a file
     let file_data = format!("Some awesome file data man!!\n");
