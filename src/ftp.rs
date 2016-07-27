@@ -374,7 +374,7 @@ impl FtpStream {
         self.read_response(status::REQUESTED_FILE_ACTION_OK).map(|_| ())
     }
 
-    fn put_file<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
+    fn put_file<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<(), FtpError> {
         let stor_command = format!("STOR {}\r\n", filename);
         let mut data_stream = BufWriter::new(try!(self.data_command(&stor_command)));
         try!(self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND]));
