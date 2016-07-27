@@ -26,6 +26,6 @@ fn test_ftp(addr: &str, user: &str, pass: &str) -> Result<(), FtpError> {
 }
 
 fn main() {
-    test_ftp("127.0.0.1", "username", "password").unwrap();
+    test_ftp("127.0.0.1", "Doe", "mumble").unwrap();
     println!("test successful")
 }
