@@ -6,6 +6,9 @@ use std::convert::From;
 use std::error::Error;
 use std::fmt;
 
+/// A shorthand for a Result whose error type is always an FtpError.
+pub type Result<T> = ::std::result::Result<T, FtpError>;
+
 /// `FtpError` is a library-global error type to describe the different kinds of
 /// errors that might occur while using FTP.
 #[derive(Debug)]
