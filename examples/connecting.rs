@@ -26,6 +26,6 @@ fn test_ftp(addr: &str, user: &str, pass: &str) -> Result<(), FtpError> {
 }
 
 fn main() {
-    test_ftp("127.0.0.1", "Doe", "mumble").unwrap();
+    test_ftp("127.0.0.1", "anonymous", "rust-ftp@github.com").unwrap();
     println!("test successful")
 }
