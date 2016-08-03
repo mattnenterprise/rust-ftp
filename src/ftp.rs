@@ -63,9 +63,9 @@ impl<T: IntoSsl + Clone> FtpStream<T> {
     /// let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
     /// let _ = ctx.set_CA_file("/path/to/a/cert.pem").unwrap();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// let mut ftp_stream = ftp_stream.secure(ctx).unwrap();
+    /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// ```
-    pub fn secure(mut self, ssl: T) -> Result<FtpStream<T>> {
+    pub fn into_secure(mut self, ssl: T) -> Result<FtpStream<T>> {
         // Do nothing if the connection is already secured.
         if self.reader.get_ref().is_ssl() {
             return Ok(self);
@@ -109,7 +109,7 @@ impl<T: IntoSsl + Clone> FtpStream<T> {
     /// let _ = ftp_stream.quit();
     /// ```
     ///
-    pub fn insecure(mut self) -> Result<FtpStream<T>> {
+    pub fn into_insecure(mut self) -> Result<FtpStream<T>> {
         if !self.reader.get_ref().is_ssl() {
             return Ok(self);
         }
