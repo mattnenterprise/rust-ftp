@@ -1,5 +1,23 @@
 //! The set of valid values for FTP commands
 
+#[cfg(feature = "secure")]
+use openssl::ssl;
+use std::convert::From;
+use std::error::Error;
+use std::fmt;
+
+/// A shorthand for a Result whose error type is always an FtpError.
+pub type Result<T> = ::std::result::Result<T, FtpError>;
+
+/// `FtpError` is a library-global error type to describe the different kinds of
+/// errors that might occur while using FTP.
+#[derive(Debug)]
+pub enum FtpError {
+    ConnectionError(::std::io::Error),
+    SecureError(String),
+    InvalidResponse(String),
+    InvalidAddress(::std::net::AddrParseError),
+}
 
 /// Text Format Control used in `TYPE` command
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -30,6 +48,8 @@ pub enum FileType {
     Local(u8),
 }
 
+/// `Line` contains a command code and the contents of a line of text read from the network.
+pub struct Line(pub u32, pub String);
 
 impl ToString for FormatControl {
     fn to_string(&self) -> String {
@@ -41,7 +61,6 @@ impl ToString for FormatControl {
     }
 }
 
-
 impl ToString for FileType {
     fn to_string(&self) -> String {
         match self {
@@ -49,6 +68,37 @@ impl ToString for FileType {
             &FileType::Ebcdic(ref fc) => format!("E {}", fc.to_string()),
             &FileType::Image | &FileType::Binary => String::from("I"),
             &FileType::Local(ref bits) => format!("L {}", bits),
+        }
+    }
+}
+
+impl fmt::Display for FtpError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            FtpError::ConnectionError(ref ioerr) => write!(f, "FTP ConnectionError: {}", ioerr),
+            FtpError::SecureError(ref desc)      => write!(f, "FTP SecureError: {}", desc.clone()),
+            FtpError::InvalidResponse(ref desc)  => write!(f, "FTP InvalidResponse: {}", desc.clone()),
+            FtpError::InvalidAddress(ref perr)   => write!(f, "FTP InvalidAddress: {}", perr),
+        }
+    }
+}
+
+impl Error for FtpError {
+    fn description(&self) -> &str {
+        match *self {
+            FtpError::ConnectionError(ref ioerr) => ioerr.description(),
+            FtpError::SecureError(ref desc)      => desc.as_str(),
+            FtpError::InvalidResponse(ref desc)  => desc.as_str(),
+            FtpError::InvalidAddress(ref perr)   => perr.description(),
+        }
+    }
+
+    fn cause(&self) -> Option<&Error> {
+        match *self {
+            FtpError::ConnectionError(ref ioerr) => Some(ioerr),
+            FtpError::SecureError(_)             => None,
+            FtpError::InvalidResponse(_)         => None,
+            FtpError::InvalidAddress(ref perr)   => Some(perr)
         }
     }
 }

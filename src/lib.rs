@@ -55,3 +55,4 @@ pub mod types;
 pub mod status;
 
 pub use self::ftp::FtpStream;
+pub use self::types::FtpError;
