@@ -1,4 +1,5 @@
 use std::io::{Read, BufRead, BufReader, BufWriter, Cursor, Write, copy};
+use std::error::Error;
 use std::net::{TcpStream, SocketAddr};
 use std::string::String;
 use std::str::FromStr;
@@ -72,7 +73,7 @@ impl FtpStream {
     /// ```
     ///
     #[cfg(feature = "secure")]
-    pub fn secure(mut self) -> Result<FtpStream> {
+    pub fn secure(self) -> Result<FtpStream> {
         // Initialize SSL with a default context and make secure the stream.
         Ssl::new(&SSL_CONTEXT)
             .map_err(|e| FtpError::SecureError(e.description().to_owned()))
@@ -256,7 +257,7 @@ impl FtpStream {
     fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
         self.pasv()
             .and_then(|addr| self.write_str(cmd).map(|_| addr))
-            .and_then(|addr| TcpStream::connect(addr))
+            .and_then(|addr| TcpStream::connect(addr).map_err(|e| FtpError::ConnectionError(e)))
             .and_then(|stream| {
                 if self.reader.get_ref().is_ssl() {
                     Ssl::new(&SSL_CONTEXT)
