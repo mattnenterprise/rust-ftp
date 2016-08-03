@@ -1,4 +1,5 @@
 use std::io::{Read, BufRead, BufReader, BufWriter, Cursor, Write, copy};
+#[cfg(feature = "secure")]
 use std::error::Error;
 use std::net::{TcpStream, SocketAddr};
 use std::string::String;
@@ -7,6 +8,7 @@ use std::net::ToSocketAddrs;
 use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
+#[cfg(feature = "secure")]
 use openssl::ssl::{SslStream, IntoSsl};
 use super::data_stream::DataStream;
 use super::status;
@@ -63,6 +65,7 @@ impl FtpStream {
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// ```
+    #[cfg(feature = "secure")]
     pub fn into_secure<T: IntoSsl + Clone>(mut self, ssl: T) -> Result<FtpsStream<T>> {
         // Ask the server to start securing data.
         let auth_command = String::from("AUTH TLS\r\n");
@@ -87,7 +90,6 @@ impl FtpStream {
     }
     
     /// Execute command which send data back in a separate stream
-    #[cfg(not(feature = "secure"))]
     fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
         self.pasv()
             .and_then(|addr| self.write_str(cmd).map(|_| addr))
@@ -439,12 +441,14 @@ impl FtpStream {
 }
 
 /// Stream to interface with the FTP server using SSL. This interface is only for the command stream.
+#[cfg(feature = "secure")]
 #[derive(Debug)]
 pub struct FtpsStream<T: IntoSsl + Clone> {
     reader: BufReader<DataStream>,
     ssl_ctx: Option<T>
 }
 
+#[cfg(feature = "secure")]
 impl<T: IntoSsl + Clone> FtpsStream<T> {
     /// Creates an FTP Stream.
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpsStream<T>> {
