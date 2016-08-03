@@ -7,8 +7,7 @@ use std::net::ToSocketAddrs;
 use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
-#[cfg(feature = "secure")]
-use openssl::ssl::{Ssl, SslContext, SslMethod, SslStream, IntoSsl};
+use openssl::ssl::{SslStream, IntoSsl};
 use super::data_stream::DataStream;
 use super::status;
 use super::types::{FileType, FtpError, Line, Result};
@@ -25,34 +24,16 @@ lazy_static! {
     static ref SIZE_RE: Regex = Regex::new(r"\s+(\d+)\s*$").unwrap();
 }
 
-#[cfg(feature = "secure")]
-lazy_static! {
-    // Shared SSL context
-    static ref SSL_CONTEXT: SslContext = match SslContext::new(SslMethod::Sslv23) {
-        Ok(ctx) => ctx,
-        Err(e) => panic!("{}", e)
-    };
-}
-
 /// Stream to interface with the FTP server. This interface is only for the command stream.
-#[cfg(feature = "secure")]
 #[derive(Debug)]
 pub struct FtpStream<T: IntoSsl + Clone> {
     reader: BufReader<DataStream>,
     ssl_ctx: Option<T>
 }
 
-/// Stream to interface with the FTP server. This interface is only for the command stream.
-#[cfg(not(feature = "secure"))]
-#[derive(Debug)]
-pub struct FtpStream {
-    reader: BufReader<DataStream>
-}
-
-impl FtpStream {
+impl<T: IntoSsl + Clone> FtpStream<T> {
     /// Creates an FTP Stream.
-    #[cfg(feature = "secure")]
-    pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
+    pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream<T>> {
         TcpStream::connect(addr)
             .map_err(|e| FtpError::ConnectionError(e))
             .and_then(|stream| {
@@ -65,46 +46,6 @@ impl FtpStream {
             })
     }
     
-    /// Creates an FTP Stream.
-    #[cfg(not(feature = "secure"))]
-    pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
-        TcpStream::connect(addr)
-            .map_err(|e| FtpError::ConnectionError(e))
-            .and_then(|stream| {
-                let mut ftp_stream = FtpStream {
-                    reader: BufReader::new(DataStream::Tcp(stream)),
-                };
-                ftp_stream.read_response(status::READY)
-                    .map(|_| ftp_stream)
-            })
-    }
-
-    /// Switch to secure mode if possible. If the connection is already
-    /// secure does nothing.
-    ///
-    /// ## Panics
-    ///
-    /// Panics if the plain TCP connection cannot be switched to TLS mode.
-    ///
-    /// ## Example
-    ///
-    /// ```
-    /// use ftp::FtpStream;
-    /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// // Switch to the secure mode
-    /// let mut ftp_stream = ftp_stream.secure().unwrap();
-    /// // Do all secret things
-    /// let _ = ftp_stream.quit();
-    /// ```
-    ///
-    #[cfg(feature = "secure")]
-    pub fn secure(self) -> Result<FtpStream> {
-        // Initialize SSL with a default context and make secure the stream.
-        Ssl::new(&SSL_CONTEXT)
-            .map_err(|e| FtpError::SecureError(e.description().to_owned()))
-            .and_then(|ssl| self.secure_with_ssl(ssl))
-    }
-   
     /// Switch to a secure mode if possible, using a provided SSL configuration.
     /// This method does nothing if the connect is already secured.
     ///
@@ -122,12 +63,9 @@ impl FtpStream {
     /// let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
     /// let _ = ctx.set_CA_file("/path/to/a/cert.pem").unwrap();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// let mut ftp_stream = ftp_stream.secure_with_ssl(ctx).unwrap();
+    /// let mut ftp_stream = ftp_stream.secure(ctx).unwrap();
     /// ```
-    #[cfg(feature = "secure")]
-    pub fn secure_with_ssl<S>(mut self, ssl: S) -> Result<FtpStream>
-        where S: IntoSsl + Clone
-    {
+    pub fn secure(mut self, ssl: T) -> Result<FtpStream<T>> {
         // Do nothing if the connection is already secured.
         if self.reader.get_ref().is_ssl() {
             return Ok(self);
@@ -136,11 +74,12 @@ impl FtpStream {
         let auth_command = String::from("AUTH TLS\r\n");
         try!(self.write_str(&auth_command));
         try!(self.read_response(status::AUTH_OK));
+        let ssl_copy = ssl.clone();
         let stream = try!(SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream())
                           .map_err(|e| FtpError::SecureError(e.description().to_owned())));
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
-            ssl_ctx: Some(ssl.clone())
+            ssl_ctx: Some(ssl_copy)
         };
         // Set protection buffer size
         let pbsz_command = format!("PBSZ 0\r\n");
@@ -152,7 +91,7 @@ impl FtpStream {
         try!(secured_ftp_tream.read_response(status::COMMAND_OK));
         Ok(secured_ftp_tream)
     }
-
+    
     /// Switch to insecure mode. If the connection is already
     /// insecure does nothing.
     ///
@@ -170,8 +109,7 @@ impl FtpStream {
     /// let _ = ftp_stream.quit();
     /// ```
     ///
-    #[cfg(feature = "secure")]
-    pub fn insecure(mut self) -> Result<FtpStream> {
+    pub fn insecure(mut self) -> Result<FtpStream<T>> {
         if !self.reader.get_ref().is_ssl() {
             return Ok(self);
         }
@@ -184,6 +122,22 @@ impl FtpStream {
             ssl_ctx: self.ssl_ctx
         };
         Ok(plain_ftp_stream)
+    }
+    
+    fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
+        self.pasv()
+            .and_then(|addr| self.write_str(cmd).map(|_| addr))
+            .and_then(|addr| TcpStream::connect(addr).map_err(|e| FtpError::ConnectionError(e)))
+            .and_then(|stream| {
+                match self.ssl_ctx {
+                    Some(ref ssl) => {
+                        SslStream::connect(ssl.clone(), stream)
+                            .map(|stream| DataStream::Ssl(stream))
+                            .map_err(|e| FtpError::SecureError(e.description().to_owned()))
+                    },
+                    None => Ok(DataStream::Tcp(stream))
+                }
+            })
     }
 
     /// Log in to the FTP server.
@@ -269,37 +223,6 @@ impl FtpStream {
                 let addr = format!("{}.{}.{}.{}:{}", oct1, oct2, oct3, oct4, port);
                 SocketAddr::from_str(&addr)
                     .map_err(|parse_err| FtpError::InvalidAddress(parse_err))
-            })
-    }
-
-    // Execute command which send data back in a separate stream
-    #[cfg(not(feature = "secure"))]
-    fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
-        self.pasv()
-            .and_then(|addr| self.write_str(cmd).map(|_| addr))
-            .and_then(|addr| TcpStream::connect(addr)
-                      .map_err(|e| FtpError::ConnectionError(e)))
-            .map(|stream| DataStream::Tcp(stream))
-    }
-
-    #[cfg(feature = "secure")]
-    fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
-        self.pasv()
-            .and_then(|addr| self.write_str(cmd).map(|_| addr))
-            .and_then(|addr| TcpStream::connect(addr).map_err(|e| FtpError::ConnectionError(e)))
-            .and_then(|stream| {
-                if self.reader.get_ref().is_ssl() {
-                    let ssl = match self.ssl_ctx {
-                        Some(ssl) => ssl,
-                        None      => SSL_CONTEXT
-                    };
-                    Ssl::new(&ssl)
-                        .and_then(|ssl| SslStream::connect(ssl, stream))
-                        .map(|stream| DataStream::Ssl(stream))
-                        .map_err(|e| FtpError::SecureError(e.description().to_owned()))
-                } else {
-                    Ok(DataStream::Tcp(stream))
-                }
             })
     }
 
