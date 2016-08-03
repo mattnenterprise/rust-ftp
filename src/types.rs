@@ -1,7 +1,5 @@
 //! The set of valid values for FTP commands
 
-#[cfg(feature = "secure")]
-use openssl::ssl;
 use std::convert::From;
 use std::error::Error;
 use std::fmt;
