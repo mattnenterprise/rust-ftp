@@ -12,7 +12,6 @@ pub enum DataStream {
     Ssl(SslStream<TcpStream>),
 }
 
-
 #[cfg(feature = "secure")]
 impl DataStream {
     /// Unwrap the stream into TcpStream. This method is only used in secure connection.
