@@ -1,6 +1,4 @@
 use std::io::{Read, BufRead, BufReader, BufWriter, Cursor, Write, copy};
-#[cfg(feature = "secure")]
-use std::error::Error;
 use std::net::{TcpStream, SocketAddr};
 use std::string::String;
 use std::str::FromStr;
@@ -89,9 +87,9 @@ impl FtpStream {
         let auth_command = String::from("AUTH TLS\r\n");
         try!(self.write_str(&auth_command));
         try!(self.read_response(status::AUTH_OK));
-        let ssl_copy = try!(ssl.clone().into_ssl().map_err(|e| FtpError::SecureError(e.description().to_owned())));
+        let ssl_copy = try!(ssl.clone().into_ssl().map_err(|e| FtpError::SecureError(e)));
         let stream = try!(SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream())
-                          .map_err(|e| FtpError::SecureError(e.description().to_owned())));
+                          .map_err(|e| FtpError::SecureError(e)));
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
             ssl_cfg: Some(ssl_copy)
@@ -157,7 +155,7 @@ impl FtpStream {
                     Some(ref ssl) => {
                         SslStream::connect(ssl.clone(), stream)
                             .map(|stream| DataStream::Ssl(stream))
-                            .map_err(|e| FtpError::SecureError(e.description().to_owned()))
+                            .map_err(|e| FtpError::SecureError(e))
                     },
                     None => Ok(DataStream::Tcp(stream))
                 }
@@ -479,10 +477,10 @@ impl FtpStream {
             return Err(FtpError::InvalidResponse("error: could not read reply code".to_owned()));
         }
 
-        let code: u32 = try!(line[0..3].parse()
-                             .map_err(|err| {
-                                 FtpError::InvalidResponse(format!("error: could not parse reply code: {}", err))
-                             }));
+        let code: u32 = try!(
+            line[0..3].parse().map_err(|err| {
+                FtpError::InvalidResponse(format!("error: could not parse reply code: {}", err))
+            }));
 
         // multiple line reply
         // loop while the line does not begin with the code and a space
