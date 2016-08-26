@@ -88,11 +88,11 @@ impl FtpStream {
         try!(self.write_str(&auth_command));
         try!(self.read_response(status::AUTH_OK));
         let ssl_copy = try!(ssl.clone().into_ssl().map_err(|e| FtpError::SecureError(e)));
-        let stream = try!(SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream())
+        let stream = try!(SslStream::connect(ssl_copy, self.reader.into_inner().into_tcp_stream())
                           .map_err(|e| FtpError::SecureError(e)));
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
-            ssl_cfg: Some(ssl_copy)
+            ssl_cfg: Some(ssl)
         };
         // Set protection buffer size
         let pbsz_command = format!("PBSZ 0\r\n");
