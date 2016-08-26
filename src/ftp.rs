@@ -154,8 +154,14 @@ impl FtpStream {
                 match self.ssl_cfg {
                     Some(ref ssl) => {
                         SslStream::connect(ssl.clone(), stream)
-                            .map(|stream| DataStream::Ssl(stream))
-                            .map_err(|e| FtpError::SecureError(e))
+                            .map(|stream| {
+                                println!("Created an SSL connection for data command");
+                                DataStream::Ssl(stream)
+                            })
+                            .map_err(|e| {
+                                println!("Failed to create SSL conn for data command; Reason: {:?}", e);
+                                FtpError::SecureError(e)
+                            })
                     },
                     None => Ok(DataStream::Tcp(stream))
                 }
