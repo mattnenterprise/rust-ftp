@@ -92,7 +92,7 @@ impl FtpStream {
                           .map_err(|e| FtpError::SecureError(e)));
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
-            ssl_cfg: Some(ssl)
+            ssl_cfg: Some(ssl.into_ssl().unwrap())
         };
         // Set protection buffer size
         let pbsz_command = format!("PBSZ 0\r\n");
