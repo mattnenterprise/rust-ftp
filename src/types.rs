@@ -4,9 +4,6 @@ use std::convert::From;
 use std::error::Error;
 use std::fmt;
 
-#[cfg(feature = "secure")]
-use openssl::ssl::error::SslError;
-
 /// A shorthand for a Result whose error type is always an FtpError.
 pub type Result<T> = ::std::result::Result<T, FtpError>;
 
@@ -18,7 +15,7 @@ pub enum FtpError {
     InvalidResponse(String),
     InvalidAddress(::std::net::AddrParseError),
     #[cfg(feature = "secure")]
-    SecureError(SslError),
+    SecureError(Box<Error>),
 }
 
 /// Text Format Control used in `TYPE` command
