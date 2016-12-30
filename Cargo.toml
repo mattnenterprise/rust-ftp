@@ -29,4 +29,3 @@ chrono = "0.2"
 [dependencies.openssl]
 version = "^0.9"
 optional = true
-features = ["ssl_context_clone"]
