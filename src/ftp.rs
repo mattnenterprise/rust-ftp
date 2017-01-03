@@ -7,7 +7,7 @@ use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
 #[cfg(feature = "secure")]
-use openssl::ssl::{SslContext, SslStream};
+use openssl::ssl::{Ssl, SslContext, SslStream};
 use super::data_stream::DataStream;
 use super::status;
 use super::types::{FileType, FtpError, Line, Result};
@@ -87,9 +87,10 @@ impl FtpStream {
         let auth_command = String::from("AUTH TLS\r\n");
         try!(self.write_str(&auth_command));
         try!(self.read_response(status::AUTH_OK));
-        let ssl_copy = ssl.clone();
-        let stream = try!(SslStream::connect(&ssl_copy, self.reader.into_inner().into_tcp_stream())
-                          .map_err(|e| FtpError::SecureError(Box::new(e))));
+        //let ssl_copy = ssl.clone();
+        let ssl_cfg = try!(Ssl::new(&ssl).map_err(|e| FtpError::SecureError(Box::new(e))));
+        let tcp_stream = self.reader.into_inner().into_tcp_stream();
+        let stream = try!(ssl_cfg.connect(tcp_stream).map_err(|e| FtpError::SecureError(Box::new(e))));
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
             ssl_cfg: Some(ssl),
@@ -147,18 +148,16 @@ impl FtpStream {
     /// Execute command which send data back in a separate stream
     #[cfg(feature = "secure")]
     fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
-        self.pasv()
-            .and_then(|addr| self.write_str(cmd).map(|_| addr))
-            .and_then(|addr| TcpStream::connect(addr).map_err(|e| FtpError::ConnectionError(e)))
-            .and_then(|stream| {
-                if let Some(ref ssl) = self.ssl_cfg {
-                    SslStream::connect(ssl, stream)
-                        .map(|stream| DataStream::Ssl(stream))
-                        .map_err(|e| FtpError::SecureError(Box::new(e)))
-                } else {
-                    Ok(DataStream::Tcp(stream))
-                }
-            })
+        let addr = try!(self.pasv());
+        try!(self.write_str(cmd));
+        let stream = try!(TcpStream::connect(addr).map_err(|e| FtpError::ConnectionError(e)));
+        if let Some(ref ssl) = self.ssl_cfg {
+            let ssl_cfg = try!(Ssl::new(ssl).map_err(|e| FtpError::SecureError(Box::new(e))));
+            let ssl_stream = try!(ssl_cfg.connect(stream).map_err(|e| FtpError::SecureError(Box::new(e))));
+            Ok(DataStream::Ssl(ssl_stream))
+        } else {
+            Ok(DataStream::Tcp(stream))
+        }
     }
 
     /// Log in to the FTP server.
