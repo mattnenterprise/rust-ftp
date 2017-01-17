@@ -30,13 +30,17 @@
 //!
 //! ```ignore
 //! use ftp::FtpStream;
+//! use openssl::ssl::*;
+//!
 //! let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
+//! let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
+//! let mut ssl = Ssl::new(&ctx).unwrap();
 //! // Switch to the secure mode
-//! let (mut ftp_stream, _) = ftp_stream.secure();
+//! let mut ftp_stream = ftp_stream.into_secure(ssl).unwrap();
 //! ftp_stream.login("anonymous", "anonymous").unwrap();
 //! // Do other secret stuff
 //! // Switch back to the insecure mode (if required)
-//! let (mut ftp_stream, _) = ftp_stream.insecure();
+//! let mut ftp_stream = ftp_stream.into_insecure().unwrap();
 //! // Do all public stuff
 //! let _ = ftp_stream.quit();
 //! ```
