@@ -1,6 +1,4 @@
 use std::io::{Read, BufRead, BufReader, BufWriter, Cursor, Write, copy};
-#[cfg(feature = "secure")]
-use std::error::Error;
 use std::net::{TcpStream, SocketAddr};
 use std::string::String;
 use std::str::FromStr;
@@ -9,7 +7,7 @@ use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
 #[cfg(feature = "secure")]
-use openssl::ssl::{Ssl, SslStream, IntoSsl};
+use openssl::ssl::{Ssl, SslContext, SslStream};
 use super::data_stream::DataStream;
 use super::status;
 use super::types::{FileType, FtpError, Line, Result};
@@ -31,7 +29,7 @@ lazy_static! {
 pub struct FtpStream {
     reader: BufReader<DataStream>,
     #[cfg(feature = "secure")]
-    ssl_cfg: Option<Ssl>,
+    ssl_cfg: Option<SslContext>,
 }
 
 impl FtpStream {
@@ -84,17 +82,18 @@ impl FtpStream {
     /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// ```
     #[cfg(feature = "secure")]
-    pub fn into_secure<T: IntoSsl + Clone>(mut self, ssl: T) -> Result<FtpStream> {
+    pub fn into_secure(mut self, ssl: SslContext) -> Result<FtpStream> {
         // Ask the server to start securing data.
         let auth_command = String::from("AUTH TLS\r\n");
         try!(self.write_str(&auth_command));
         try!(self.read_response(status::AUTH_OK));
-        let ssl_copy = try!(ssl.clone().into_ssl().map_err(|e| FtpError::SecureError(e.description().to_owned())));
-        let stream = try!(SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream())
-                          .map_err(|e| FtpError::SecureError(e.description().to_owned())));
+        //let ssl_copy = ssl.clone();
+        let ssl_cfg = try!(Ssl::new(&ssl).map_err(|e| FtpError::SecureError(Box::new(e))));
+        let tcp_stream = self.reader.into_inner().into_tcp_stream();
+        let stream = try!(ssl_cfg.connect(tcp_stream).map_err(|e| FtpError::SecureError(Box::new(e))));
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
-            ssl_cfg: Some(ssl_copy)
+            ssl_cfg: Some(ssl),
         };
         // Set protection buffer size
         let pbsz_command = format!("PBSZ 0\r\n");
@@ -149,19 +148,16 @@ impl FtpStream {
     /// Execute command which send data back in a separate stream
     #[cfg(feature = "secure")]
     fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
-        self.pasv()
-            .and_then(|addr| self.write_str(cmd).map(|_| addr))
-            .and_then(|addr| TcpStream::connect(addr).map_err(|e| FtpError::ConnectionError(e)))
-            .and_then(|stream| {
-                match self.ssl_cfg {
-                    Some(ref ssl) => {
-                        SslStream::connect(ssl.clone(), stream)
-                            .map(|stream| DataStream::Ssl(stream))
-                            .map_err(|e| FtpError::SecureError(e.description().to_owned()))
-                    },
-                    None => Ok(DataStream::Tcp(stream))
-                }
-            })
+        let addr = try!(self.pasv());
+        try!(self.write_str(cmd));
+        let stream = try!(TcpStream::connect(addr).map_err(|e| FtpError::ConnectionError(e)));
+        if let Some(ref ssl) = self.ssl_cfg {
+            let ssl_cfg = try!(Ssl::new(ssl).map_err(|e| FtpError::SecureError(Box::new(e))));
+            let ssl_stream = try!(ssl_cfg.connect(stream).map_err(|e| FtpError::SecureError(Box::new(e))));
+            Ok(DataStream::Ssl(ssl_stream))
+        } else {
+            Ok(DataStream::Tcp(stream))
+        }
     }
 
     /// Log in to the FTP server.
@@ -481,10 +477,10 @@ impl FtpStream {
             return Err(FtpError::InvalidResponse("error: could not read reply code".to_owned()));
         }
 
-        let code: u32 = try!(line[0..3].parse()
-                             .map_err(|err| {
-                                 FtpError::InvalidResponse(format!("error: could not parse reply code: {}", err))
-                             }));
+        let code: u32 = try!(
+            line[0..3].parse().map_err(|err| {
+                FtpError::InvalidResponse(format!("error: could not parse reply code: {}", err))
+            }));
 
         // multiple line reply
         // loop while the line does not begin with the code and a space
