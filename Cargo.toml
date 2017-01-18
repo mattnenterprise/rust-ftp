@@ -1,6 +1,6 @@
 [package]
 name = "ftp"
-version = "2.0.1"
+version = "2.1.1"
 authors = ["Matt McCoy <mattnenterprise@yahoo.com>"]
 documentation = "http://mattnenterprise.github.io/rust-ftp"
 repository = "https://github.com/mattnenterprise/rust-ftp"
