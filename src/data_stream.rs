@@ -31,6 +31,17 @@ impl DataStream {
     }
 }
 
+impl DataStream {
+    /// Returns a reference to the underlying TcpStream.
+    pub fn get_ref(&self) -> &TcpStream {
+        match self {
+            &DataStream::Tcp(ref stream) => stream,
+            #[cfg(feature = "secure")]
+            &DataStream::Ssl(ref stream) => stream.get_ref(),
+        }
+    }
+}
+
 impl Read for DataStream {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         match self {

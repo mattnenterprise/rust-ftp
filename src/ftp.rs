@@ -164,6 +164,21 @@ impl FtpStream {
             })
     }
 
+    /// Returns a reference to the underlying TcpStream.
+    ///
+    /// Example:
+    /// ```no_run
+    /// use std::net::TcpStream;
+    ///
+    /// let stream = FtpStream::connect("127.0.0.1:21")
+    ///                        .expect("Couldn't connect to the server...");
+    /// stream.get_ref().set_read_timeout(Duration::from_secs(10))
+    ///                 .expect("set_read_timeout call failed");
+    /// ```
+    pub fn get_ref(&self) -> &TcpStream {
+        self.reader.get_ref().get_ref()
+    }
+
     /// Log in to the FTP server.
     pub fn login(&mut self, user: &str, password: &str) -> Result<()> {
         let user_command = format!("USER {}\r\n", user);
