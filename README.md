@@ -8,7 +8,7 @@ FTP client for Rust
 
 [Documentation](http://mattnenterprise.github.io/rust-ftp)
 
-### Installation
+## Installation
 
 Add ftp via your `Cargo.toml`
 ```toml
@@ -22,7 +22,7 @@ FTPS support is disabled by default. To enable it `secure` should be activated i
 ftp = { version = "*", features = ["secure"] }
 ```
 
-### Usage
+## Usage
 ```rust
 extern crate ftp;
 
@@ -71,3 +71,22 @@ Unless you explicitly state otherwise, any contribution intentionally
 submitted for inclusion in the work by you, as defined in the Apache-2.0
 license, shall be dual licensed as above, without any additional terms or
 conditions.
+
+## Development environment
+
+All you need to develop rust-ftp and run the tests is Rust and Docker.
+The `tests` folder contains a `Dockerfile` that installs and configures
+the vsftpd server.
+
+To create the Docker image:
+
+```sh
+docker build -t ftp-server tests
+```
+
+To start the FTP server that is tested against:
+
+```sh
+./tests/ftp-server.sh &
+cargo test
+```
