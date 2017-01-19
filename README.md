@@ -87,6 +87,12 @@ docker build -t ftp-server tests
 To start the FTP server that is tested against:
 
 ```sh
-./tests/ftp-server.sh &
+./tests/ftp-server.sh
+/etc/init.d/vsftpd start
+```
+
+Then to run tests:
+
+```sh
 cargo test
 ```
