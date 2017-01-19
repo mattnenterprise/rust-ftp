@@ -1,7 +1,7 @@
-FROM ubuntu:latest
+FROM i386/ubuntu:latest
 
 RUN apt-get update -qq &&\
-    apt-get install -yqq bc vsftpd
+    apt-get install -yqq vsftpd
 
 RUN mkdir -p /var/run/vsftpd/empty &&\
     useradd -s /bin/bash -d /home/ftp -m -c "Doe ftp user" -g ftp Doe &&\
