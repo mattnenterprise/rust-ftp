@@ -80,19 +80,34 @@ the vsftpd server.
 
 To create the Docker image:
 
-```sh
+```bash
 docker build -t ftp-server tests
 ```
 
 To start the FTP server that is tested against:
 
-```sh
-./tests/ftp-server.sh
-/etc/init.d/vsftpd start
+```bash
+tests/ftp-server.sh
 ```
 
-Then to run tests:
+This script runs the `ftp-server` image in detached mode and starts the `vsftpd` daemon. It binds ports 21 (FTP) as well as the range 65000-65010 for passive connections.
 
-```sh
+Once you have an instance running, to run tests type:
+
+```bash
 cargo test
+```
+
+The following commands can be useful:
+```bash
+# List running containers of ftp-server image
+# (to include stopped containers use -a option)
+docker ps --filter ancestor=ftp-server
+
+# To stop and remove a container
+docker stop container_name
+docker rm container_name
+
+# To remove the image
+docker rmi ftp-server
 ```
