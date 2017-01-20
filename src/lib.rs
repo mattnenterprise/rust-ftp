@@ -28,13 +28,13 @@
 //!
 //! ### FTPS Usage
 //!
-//! ```ignore
+//! ```rust,no_run
 //! use ftp::FtpStream;
-//! use openssl::ssl::*;
+//! use ftp::openssl::ssl::*;
 //!
-//! let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-//! let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
-//! let mut ssl = Ssl::new(&ctx).unwrap();
+//! let ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
+//! let ctx = SslContext::new(SslMethod::Sslv23).unwrap();
+//! let ssl = Ssl::new(&ctx).unwrap();
 //! // Switch to the secure mode
 //! let mut ftp_stream = ftp_stream.into_secure(ssl).unwrap();
 //! ftp_stream.login("anonymous", "anonymous").unwrap();
@@ -50,8 +50,9 @@
 #[macro_use] extern crate lazy_static;
 extern crate regex;
 extern crate chrono;
+
 #[cfg(feature = "secure")]
-extern crate openssl;
+pub extern crate openssl;
 
 mod ftp;
 mod data_stream;

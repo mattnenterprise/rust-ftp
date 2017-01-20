@@ -73,15 +73,15 @@ impl FtpStream {
     ///
     /// ## Example
     ///
-    /// ```
+    /// ```rust,no_run
     /// use ftp::FtpStream;
-    /// use openssl::ssl::*;
+    /// use ftp::openssl::ssl::*;
     ///
     /// // Create an SslContext with a custom cert.
     /// let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
     /// let _ = ctx.set_CA_file("/path/to/a/cert.pem").unwrap();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
+    /// let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
     /// ```
     #[cfg(feature = "secure")]
     pub fn into_secure<T: IntoSsl + Clone>(mut self, ssl: T) -> Result<FtpStream> {
@@ -112,14 +112,18 @@ impl FtpStream {
     ///
     /// ## Example
     ///
-    /// ```
+    /// ```rust,no_run
     /// use ftp::FtpStream;
+    /// use ftp::openssl::ssl::*;
+    ///
+    /// // Create an SslContext with a custom cert.
+    /// let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
+    /// let _ = ctx.set_CA_file("/path/to/a/cert.pem").unwrap();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// // Switch to the secure mode
-    /// let (mut ftp_stream, _) = ftp_stream.secure();
+    /// let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
     /// // Do all secret things
     /// // Switch back to the insecure mode
-    /// let (mut ftp_stream, _) = ftp_stream.insecure();
+    /// let mut ftp_stream = ftp_stream.into_insecure().unwrap();
     /// // Do all public things
     /// let _ = ftp_stream.quit();
     /// ```
@@ -291,21 +295,21 @@ impl FtpStream {
     /// to download from FTP and `reader` is the function which operates with the
     /// data stream opened.
     ///
-    /// ```ignore
-    /// let result = conn.retr("take_this.txt", |stream| {
-    ///   let mut file = File::create("store_here.txt").unwrap();
-    ///   let mut buf = [0; 2048];
-    ///
-    ///   loop {
-    ///     match stream.read(&mut buf) {
-    ///       Ok(0) => break,
-    ///       Ok(n) => file.write_all(&buf[0..n]).unwrap(),
-    ///       Err(err) => return Err(err)
-    ///     };
-    ///   }
-    ///
-    ///   Ok(())
-    /// });
+    /// ```
+    /// # use ftp::{FtpStream, FtpError};
+    /// # use std::io::Cursor;
+    /// # let mut conn = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// # conn.login("Doe", "mumble").and_then(|_| {
+    /// #     let mut reader = Cursor::new("hello, world!".as_bytes());
+    /// #     conn.put("retr.txt", &mut reader)
+    /// # }).unwrap();
+    /// assert!(conn.retr("retr.txt", |stream| {
+    ///     let mut buf = Vec::new();
+    ///     stream.read_to_end(&mut buf).map(|_|
+    ///         assert_eq!(buf, "hello, world!".as_bytes())
+    ///     ).map_err(|e| FtpError::ConnectionError(e))
+    /// }).is_ok());
+    /// # assert!(conn.rm("retr.txt").is_ok());
     /// ```
     pub fn retr<F>(&mut self, filename: &str, reader: F) -> Result<()>
     where F: Fn(&mut Read) -> Result<()> {
@@ -336,6 +340,20 @@ impl FtpStream {
     }
 
     /// Simple way to retr a file from the server. This stores the file in memory.
+    ///
+    /// ```
+    /// # use ftp::{FtpStream, FtpError};
+    /// # use std::io::Cursor;
+    /// # let mut conn = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// # conn.login("Doe", "mumble").and_then(|_| {
+    /// #     let mut reader = Cursor::new("hello, world!".as_bytes());
+    /// #     conn.put("simple_retr.txt", &mut reader)
+    /// # }).unwrap();
+    /// let cursor = conn.simple_retr("simple_retr.txt").unwrap();
+    /// // do something with bytes
+    /// assert_eq!(cursor.into_inner(), "hello, world!".as_bytes());
+    /// # assert!(conn.rm("simple_retr.txt").is_ok());
+    /// ```
     pub fn simple_retr(&mut self, file_name: &str) -> Result<Cursor<Vec<u8>>> {
         let r = try!(self.simple_retr_(file_name));
         self.read_response(status::CLOSING_DATA_CONNECTION).map(|_| r)
