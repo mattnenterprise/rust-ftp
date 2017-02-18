@@ -326,8 +326,8 @@ impl FtpStream {
     /// }).is_ok());
     /// # assert!(conn.rm("retr.txt").is_ok());
     /// ```
-    pub fn retr<F>(&mut self, filename: &str, reader: F) -> Result<()>
-    where F: Fn(&mut Read) -> Result<()> {
+    pub fn retr<F, A>(&mut self, filename: &str, reader: F) -> Result<A>
+    where F: Fn(&mut Read) -> Result<A> {
         let retr_command = format!("RETR {}\r\n", filename);
         let mut data_stream = BufReader::new(try!(self.data_command(&retr_command)));
         self.read_response_in(&[status::ABOUT_TO_SEND, status::ALREADY_OPEN])
