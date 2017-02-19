@@ -451,9 +451,7 @@ impl FtpStream {
     }
 
     fn write_str<S: AsRef<str>>(&mut self, command: S) -> Result<()> {
-        if cfg!(feature = "debug_print") {
-            print!("CMD {}", command.as_ref());
-        }
+        debug!("CMD {}", command.as_ref());
 
         let stream = self.reader.get_mut();
         stream.write_all(command.as_ref().as_bytes())
@@ -470,9 +468,7 @@ impl FtpStream {
         try!(self.reader.read_line(&mut line)
              .map_err(|read_err| FtpError::ConnectionError(read_err)));
 
-        if cfg!(feature = "debug_print") {
-            print!("FTP {}", line);
-        }
+        debug!("FTP {}", line);
 
         if line.len() < 5 {
             return Err(FtpError::InvalidResponse("error: could not read reply code".to_owned()));
@@ -492,9 +488,7 @@ impl FtpStream {
                 return Err(FtpError::ConnectionError(e));
             }
 
-            if cfg!(feature = "debug_print") {
-                print!("FTP {}", line);
-            }
+            debug!("FTP {}", line);
         }
 
         if expected_code.into_iter().any(|ec| code == *ec) {
