@@ -1,5 +1,4 @@
 use std::io::{Read, BufRead, BufReader, BufWriter, Cursor, Write, copy};
-#[cfg(feature = "secure")]
 use std::error::Error;
 use std::net::{TcpStream, SocketAddr};
 use std::string::String;
@@ -13,6 +12,7 @@ use openssl::ssl::{Ssl, SslStream, IntoSsl};
 use super::data_stream::DataStream;
 use super::status;
 use super::types::{FileType, FtpError, Line, Result};
+use std::result;
 
 lazy_static! {
     // This regex extracts IP and Port details from PASV command response.
@@ -326,17 +326,16 @@ impl FtpStream {
     /// }).is_ok());
     /// # assert!(conn.rm("retr.txt").is_ok());
     /// ```
-    pub fn retr<F>(&mut self, filename: &str, reader: F) -> Result<()>
-    where F: Fn(&mut Read) -> Result<()> {
+
+    pub fn retr<F, A>(&mut self, filename: &str, reader: F) -> result::Result<A, Box<Error>>
+    where F: Fn(&mut Read) -> result::Result<A, Box<Error>> {
         let retr_command = format!("RETR {}\r\n", filename);
-        let mut data_stream = BufReader::new(try!(self.data_command(&retr_command)));
-        self.read_response_in(&[status::ABOUT_TO_SEND, status::ALREADY_OPEN])
-            .and_then(|_| {
-                let result = reader(&mut data_stream);
-                drop(data_stream);
-                try!(self.read_response(status::CLOSING_DATA_CONNECTION));
-                result
-            })
+        let mut data_stream = BufReader::new(self.data_command(&retr_command)?);
+        self.read_response_in(&[status::ABOUT_TO_SEND, status::ALREADY_OPEN])?;
+        let result = reader(&mut data_stream)?;
+        drop(data_stream);
+        self.read_response(status::CLOSING_DATA_CONNECTION)?;
+        Ok(result)
     }
 
     fn simple_retr_(&mut self, file_name: &str) -> Result<Cursor<Vec<u8>>> {
