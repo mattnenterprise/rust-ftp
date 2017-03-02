@@ -4,6 +4,9 @@ use std::convert::From;
 use std::error::Error;
 use std::fmt;
 
+#[cfg(feature = "secure")]
+use openssl::ssl::error::SslError;
+
 /// A shorthand for a Result whose error type is always an FtpError.
 pub type Result<T> = ::std::result::Result<T, FtpError>;
 
@@ -12,9 +15,10 @@ pub type Result<T> = ::std::result::Result<T, FtpError>;
 #[derive(Debug)]
 pub enum FtpError {
     ConnectionError(::std::io::Error),
-    SecureError(String),
     InvalidResponse(String),
     InvalidAddress(::std::net::AddrParseError),
+    #[cfg(feature = "secure")]
+    SecureError(SslError),
 }
 
 /// Text Format Control used in `TYPE` command
@@ -74,9 +78,10 @@ impl fmt::Display for FtpError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             FtpError::ConnectionError(ref ioerr) => write!(f, "FTP ConnectionError: {}", ioerr),
-            FtpError::SecureError(ref desc)      => write!(f, "FTP SecureError: {}", desc.clone()),
             FtpError::InvalidResponse(ref desc)  => write!(f, "FTP InvalidResponse: {}", desc.clone()),
             FtpError::InvalidAddress(ref perr)   => write!(f, "FTP InvalidAddress: {}", perr),
+            #[cfg(feature = "secure")]
+            FtpError::SecureError(ref desc)      => write!(f, "FTP SecureError: {}", desc.clone()),
         }
     }
 }
@@ -85,18 +90,20 @@ impl Error for FtpError {
     fn description(&self) -> &str {
         match *self {
             FtpError::ConnectionError(ref ioerr) => ioerr.description(),
-            FtpError::SecureError(ref desc)      => desc.as_str(),
             FtpError::InvalidResponse(ref desc)  => desc.as_str(),
             FtpError::InvalidAddress(ref perr)   => perr.description(),
+            #[cfg(feature = "secure")]
+            FtpError::SecureError(ref sslerr)    => sslerr.description(),
         }
     }
 
     fn cause(&self) -> Option<&Error> {
         match *self {
             FtpError::ConnectionError(ref ioerr) => Some(ioerr),
-            FtpError::SecureError(_)             => None,
             FtpError::InvalidResponse(_)         => None,
-            FtpError::InvalidAddress(ref perr)   => Some(perr)
+            FtpError::InvalidAddress(ref perr)   => Some(perr),
+            #[cfg(feature = "secure")]
+            FtpError::SecureError(_)             => None,
         }
     }
 }
