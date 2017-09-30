@@ -1,13 +1,17 @@
 [package]
 name = "ftp"
-version = "2.1.1"
+version = "2.1.2"
 authors = ["Matt McCoy <mattnenterprise@yahoo.com>"]
-documentation = "http://mattnenterprise.github.io/rust-ftp"
+documentation = "https://docs.rs/ftp/"
 repository = "https://github.com/mattnenterprise/rust-ftp"
 description = "FTP client for Rust"
 readme = "README.md"
 license = "Apache-2.0/MIT"
 keywords = ["ftp"]
+categories = ["network-programming"]
+
+[badges]
+travis-ci = { repository = "mattnenterprise/rust-ftp" }
 
 [lib]
 name ="ftp"
