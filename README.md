@@ -10,16 +10,10 @@ FTP client for Rust
 
 ## Installation
 
-Add ftp via your `Cargo.toml`
-```toml
-[dependencies]
-ftp = "*"
-```
-
 FTPS support is disabled by default. To enable it `secure` should be activated in `Cargo.toml`.
 ```toml
 [dependencies]
-ftp = { version = "*", features = ["secure"] }
+ftp = { version = "<version>", features = ["secure"] }
 ```
 
 ## Usage
