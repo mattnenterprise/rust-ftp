@@ -12,7 +12,7 @@ use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
 #[cfg(feature = "secure")]
-use openssl::ssl::{Ssl};
+use openssl::ssl::{Ssl, SslContext};
 use super::data_stream::DataStream;
 use super::status;
 use super::types::{FileType, FtpError, Line, Result};
@@ -34,7 +34,7 @@ lazy_static! {
 pub struct FtpStream {
     reader: BufReader<DataStream>,
     #[cfg(feature = "secure")]
-    ssl_cfg: Option<Ssl>,
+    ssl_cfg: Option<SslContext>,
 }
 
 impl FtpStream {
@@ -87,16 +87,16 @@ impl FtpStream {
     /// let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
     /// ```
     #[cfg(feature = "secure")]
-    pub fn into_secure(mut self, ssl: Ssl) -> Result<FtpStream> {
+    pub fn into_secure(mut self, ssl_context: SslContext) -> Result<FtpStream> {
         // Ask the server to start securing data.
         try!(self.write_str("AUTH TLS\r\n"));
         try!(self.read_response(status::AUTH_OK));
-        //let ssl_copy = try!(ssl.clone().into_ssl().map_err(|e| FtpError::SecureError(e.description().to_owned())));
-        let stream = try!(ssl.connect(self.reader.into_inner().into_tcp_stream())
-                          .map_err(|e| FtpError::SecureError(e.description().to_owned())));
+        let ssl_cfg = try!(Ssl::new(&ssl_context).map_err(|e| FtpError::SecureError(e.description().to_owned())));
+        let stream = try!(ssl_cfg.connect(self.reader.into_inner().into_tcp_stream()).map_err(|e| FtpError::SecureError(e.description().to_owned())));
+
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
-            ssl_cfg: Some(ssl)
+            ssl_cfg: Some(ssl_context)
         };
         // Set protection buffer size
         try!(secured_ftp_tream.write_str("PBSZ 0\r\n"));
@@ -158,7 +158,7 @@ impl FtpStream {
             .and_then(|stream| {
                 match self.ssl_cfg {
                     Some(ref ssl) => {
-                        ssl.clone().connect(stream)
+                        Ssl::new(ssl).unwrap().connect(stream)
                             .map(|stream| DataStream::Ssl(stream))
                             .map_err(|e| FtpError::SecureError(e.description().to_owned()))
                     },
