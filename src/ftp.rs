@@ -12,7 +12,7 @@ use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
 #[cfg(feature = "secure")]
-use openssl::ssl::{Ssl, SslStream, IntoSsl};
+use openssl::ssl::{Ssl, SslStream};
 use super::data_stream::DataStream;
 use super::status;
 use super::types::{FileType, FtpError, Line, Result};
@@ -87,16 +87,16 @@ impl FtpStream {
     /// let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
     /// ```
     #[cfg(feature = "secure")]
-    pub fn into_secure<T: IntoSsl + Clone>(mut self, ssl: T) -> Result<FtpStream> {
+    pub fn into_secure(mut self, ssl: Ssl) -> Result<FtpStream> {
         // Ask the server to start securing data.
         try!(self.write_str("AUTH TLS\r\n"));
         try!(self.read_response(status::AUTH_OK));
-        let ssl_copy = try!(ssl.clone().into_ssl().map_err(|e| FtpError::SecureError(e.description().to_owned())));
-        let stream = try!(SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream())
+        //let ssl_copy = try!(ssl.clone().into_ssl().map_err(|e| FtpError::SecureError(e.description().to_owned())));
+        let stream = try!(ssl.connect(self.reader.into_inner().into_tcp_stream())
                           .map_err(|e| FtpError::SecureError(e.description().to_owned())));
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
-            ssl_cfg: Some(ssl_copy)
+            ssl_cfg: Some(ssl)
         };
         // Set protection buffer size
         try!(secured_ftp_tream.write_str("PBSZ 0\r\n"));
@@ -158,7 +158,7 @@ impl FtpStream {
             .and_then(|stream| {
                 match self.ssl_cfg {
                     Some(ref ssl) => {
-                        SslStream::connect(ssl.clone(), stream)
+                        ssl.clone().connect(stream)
                             .map(|stream| DataStream::Ssl(stream))
                             .map_err(|e| FtpError::SecureError(e.description().to_owned()))
                     },
