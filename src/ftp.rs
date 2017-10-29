@@ -86,7 +86,7 @@ impl FtpStream {
     /// let _ = ctx.set_CA_file(Path::new("/path/to/a/cert.pem")).unwrap();
     /// let ctx = ctx.build();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
+    /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// ```
     #[cfg(feature = "secure")]
     pub fn into_secure(mut self, ssl_context: SslContext) -> Result<FtpStream> {
@@ -124,7 +124,7 @@ impl FtpStream {
     /// let _ = ctx.set_CA_file(Path::new("/path/to/a/cert.pem")).unwrap();
     /// let ctx = ctx.build();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
+    /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// // Do all secret things
     /// // Switch back to the insecure mode
     /// let mut ftp_stream = ftp_stream.into_insecure().unwrap();

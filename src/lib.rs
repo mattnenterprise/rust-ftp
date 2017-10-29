@@ -35,7 +35,7 @@
 //! let ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
 //! let ctx = SslContext::builder(SslMethod::tls()).unwrap().build();
 //! // Switch to the secure mode
-//! let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
+//! let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
 //! ftp_stream.login("anonymous", "anonymous").unwrap();
 //! // Do other secret stuff
 //! // Switch back to the insecure mode (if required)
