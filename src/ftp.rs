@@ -12,7 +12,7 @@ use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
 #[cfg(feature = "secure")]
-use openssl::ssl::{Ssl, SslContext};
+use openssl::ssl::*;
 use super::data_stream::DataStream;
 use super::status;
 use super::types::{FileType, FtpError, Line, Result};
@@ -77,12 +77,14 @@ impl FtpStream {
     /// ## Example
     ///
     /// ```rust,no_run
+    /// use std::path::Path;
     /// use ftp::FtpStream;
-    /// use ftp::openssl::ssl::*;
+    /// use openssl::ssl::*;
     ///
     /// // Create an SslContext with a custom cert.
-    /// let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
-    /// let _ = ctx.set_CA_file("/path/to/a/cert.pem").unwrap();
+    /// let mut ctx = SslContext::new(SslMethod::tls()).unwrap();
+    /// let _ = ctx.set_CA_file(Path::new("/path/to/a/cert.pem")).unwrap();
+    /// let ctx = ctx.build();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
     /// ```
@@ -113,12 +115,14 @@ impl FtpStream {
     /// ## Example
     ///
     /// ```rust,no_run
+    /// use std::path::Path;
     /// use ftp::FtpStream;
     /// use ftp::openssl::ssl::*;
     ///
     /// // Create an SslContext with a custom cert.
-    /// let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
-    /// let _ = ctx.set_CA_file("/path/to/a/cert.pem").unwrap();
+    /// let mut ctx = SslContext::new(SslMethod::tls()).unwrap();
+    /// let _ = ctx.set_CA_file(Path::new("/path/to/a/cert.pem")).unwrap();
+    /// let ctx = ctx.build();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
     /// // Do all secret things
