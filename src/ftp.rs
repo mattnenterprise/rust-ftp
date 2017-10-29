@@ -377,11 +377,11 @@ impl FtpStream {
     }
 
     /// Execute a command which returns list of strings in a separate stream
-    fn list_command(&mut self, cmd: Cow<'static, str>, open_code: u32, close_code: u32) -> Result<Vec<String>> {
+    fn list_command(&mut self, cmd: Cow<'static, str>) -> Result<Vec<String>> {
         let mut lines: Vec<String> = Vec::new();
         {
             let mut data_stream = BufReader::new(try!(self.data_command(&cmd)));
-            try!(self.read_response_in(&[open_code, status::ALREADY_OPEN]));
+            //try!(self.read_response_in(&[open_code, status::ALREADY_OPEN]));
 
             let mut line = String::new();
             loop {
@@ -393,7 +393,13 @@ impl FtpStream {
             }
         }
 
-        self.read_response(close_code).map(|_| lines)
+        // Printing the directory in debug
+        if cfg!(feature = "debug_print") {
+            println!("lines: {:?}", lines);
+        }
+
+        //self.read_response(close_code).map(|_| lines)
+        Ok(lines)
     }
 
     /// Execute `LIST` command which returns the detailed file listing in human readable format.
@@ -402,7 +408,7 @@ impl FtpStream {
     pub fn list(&mut self, pathname: Option<&str>) -> Result<Vec<String>> {
         let command = pathname.map_or("LIST\r\n".into(), |path| format!("LIST {}\r\n", path).into());
 
-        self.list_command(command, status::ABOUT_TO_SEND, status::CLOSING_DATA_CONNECTION)
+        self.list_command(command)
     }
 
     /// Execute `NLST` command which returns the list of file names only.
@@ -411,7 +417,7 @@ impl FtpStream {
     pub fn nlst(&mut self, pathname: Option<&str>) -> Result<Vec<String>> {
         let command = pathname.map_or("NLST\r\n".into(), |path| format!("NLST {}\r\n", path).into());
 
-        self.list_command(command, status::ABOUT_TO_SEND, status::CLOSING_DATA_CONNECTION)
+        self.list_command(command)
     }
 
     /// Retrieves the modification time of the file at `pathname` if it exists.
