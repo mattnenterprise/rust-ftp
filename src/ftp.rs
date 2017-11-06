@@ -12,7 +12,7 @@ use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
 #[cfg(feature = "secure")]
-use super::openssl::ssl::*;
+use openssl::ssl::{ SslContext, Ssl };
 use super::data_stream::DataStream;
 use super::status;
 use super::types::{FileType, FtpError, Line, Result};
@@ -79,7 +79,7 @@ impl FtpStream {
     /// ```rust,no_run
     /// use std::path::Path;
     /// use ftp::FtpStream;
-    /// use ftp::openssl::ssl::*;
+    /// use ftp::openssl::ssl::{ SslContext, SslMethod };
     ///
     /// // Create an SslContext with a custom cert.
     /// let mut ctx = SslContext::new(SslMethod::tls()).unwrap();
@@ -118,7 +118,7 @@ impl FtpStream {
     /// use std::path::Path;
     /// use ftp::FtpStream;
     ///
-    /// use ftp::openssl::ssl::*;
+    /// use ftp::openssl::ssl::{ SslContext, SslMethod };
     ///
     /// // Create an SslContext with a custom cert.
     /// let mut ctx = SslContext::new(SslMethod::tls()).unwrap();

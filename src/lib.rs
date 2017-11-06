@@ -30,7 +30,7 @@
 //!
 //! ```rust,no_run
 //! use ftp::FtpStream;
-//! use ftp::openssl::ssl::*;
+//! use ftp::openssl::ssl::{ SslContext, SslMethod };
 //!
 //! let ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
 //! let ctx = SslContext::builder(SslMethod::tls()).unwrap().build();
