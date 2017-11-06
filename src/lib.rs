@@ -29,10 +29,8 @@
 //! ### FTPS Usage
 //!
 //! ```rust,no_run
-//! extern crate openssl;
-//!
 //! use ftp::FtpStream;
-//! use openssl::ssl::*;
+//! use ftp::openssl::ssl::*;
 //!
 //! let ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
 //! let ctx = SslContext::builder(SslMethod::tls()).unwrap().build();

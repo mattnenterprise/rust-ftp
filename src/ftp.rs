@@ -77,11 +77,9 @@ impl FtpStream {
     /// ## Example
     ///
     /// ```rust,no_run
-    /// extern crate openssl;
-    ///
     /// use std::path::Path;
     /// use ftp::FtpStream;
-    /// use openssl::ssl::*;
+    /// use ftp::openssl::ssl::*;
     ///
     /// // Create an SslContext with a custom cert.
     /// let mut ctx = SslContext::new(SslMethod::tls()).unwrap();
@@ -117,11 +115,10 @@ impl FtpStream {
     /// ## Example
     ///
     /// ```rust,no_run
-    /// extern crate openssl;
     /// use std::path::Path;
     /// use ftp::FtpStream;
     ///
-    /// use openssl::ssl::*;
+    /// use ftp::openssl::ssl::*;
     ///
     /// // Create an SslContext with a custom cert.
     /// let mut ctx = SslContext::new(SslMethod::tls()).unwrap();
