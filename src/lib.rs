@@ -29,6 +29,8 @@
 //! ### FTPS Usage
 //!
 //! ```rust,no_run
+//! extern crate openssl;
+//!
 //! use ftp::FtpStream;
 //! use openssl::ssl::*;
 //!
