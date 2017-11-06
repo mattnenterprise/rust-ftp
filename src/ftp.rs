@@ -82,8 +82,8 @@ impl FtpStream {
     /// use ftp::openssl::ssl::{ SslContext, SslMethod };
     ///
     /// // Create an SslContext with a custom cert.
-    /// let mut ctx = SslContext::new(SslMethod::tls()).unwrap();
-    /// let _ = ctx.set_CA_file(Path::new("/path/to/a/cert.pem")).unwrap();
+    /// let mut ctx = SslContext::builder(SslMethod::tls()).unwrap();
+    /// let _ = ctx.set_ca_file(Path::new("/path/to/a/cert.pem")).unwrap();
     /// let ctx = ctx.build();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
@@ -121,8 +121,8 @@ impl FtpStream {
     /// use ftp::openssl::ssl::{ SslContext, SslMethod };
     ///
     /// // Create an SslContext with a custom cert.
-    /// let mut ctx = SslContext::new(SslMethod::tls()).unwrap();
-    /// let _ = ctx.set_CA_file(Path::new("/path/to/a/cert.pem")).unwrap();
+    /// let mut ctx = SslContext::builder(SslMethod::tls()).unwrap();
+    /// let _ = ctx.set_ca_file(Path::new("/path/to/a/cert.pem")).unwrap();
     /// let ctx = ctx.build();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
