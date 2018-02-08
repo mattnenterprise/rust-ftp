@@ -12,7 +12,7 @@ use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
 #[cfg(feature = "secure")]
-use openssl::ssl::{Ssl, SslStream, IntoSsl};
+use openssl::ssl::{ SslContext, Ssl };
 use super::data_stream::DataStream;
 use super::status;
 use super::types::{FileType, FtpError, Line, Result};
@@ -34,7 +34,7 @@ lazy_static! {
 pub struct FtpStream {
     reader: BufReader<DataStream>,
     #[cfg(feature = "secure")]
-    ssl_cfg: Option<Ssl>,
+    ssl_cfg: Option<SslContext>,
 }
 
 impl FtpStream {
@@ -77,26 +77,28 @@ impl FtpStream {
     /// ## Example
     ///
     /// ```rust,no_run
+    /// use std::path::Path;
     /// use ftp::FtpStream;
-    /// use ftp::openssl::ssl::*;
+    /// use ftp::openssl::ssl::{ SslContext, SslMethod };
     ///
     /// // Create an SslContext with a custom cert.
-    /// let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
-    /// let _ = ctx.set_CA_file("/path/to/a/cert.pem").unwrap();
+    /// let mut ctx = SslContext::builder(SslMethod::tls()).unwrap();
+    /// let _ = ctx.set_ca_file(Path::new("/path/to/a/cert.pem")).unwrap();
+    /// let ctx = ctx.build();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
+    /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// ```
     #[cfg(feature = "secure")]
-    pub fn into_secure<T: IntoSsl + Clone>(mut self, ssl: T) -> Result<FtpStream> {
+    pub fn into_secure(mut self, ssl_context: SslContext) -> Result<FtpStream> {
         // Ask the server to start securing data.
         try!(self.write_str("AUTH TLS\r\n"));
         try!(self.read_response(status::AUTH_OK));
-        let ssl_copy = try!(ssl.clone().into_ssl().map_err(|e| FtpError::SecureError(e.description().to_owned())));
-        let stream = try!(SslStream::connect(ssl, self.reader.into_inner().into_tcp_stream())
-                          .map_err(|e| FtpError::SecureError(e.description().to_owned())));
+        let ssl_cfg = try!(Ssl::new(&ssl_context).map_err(|e| FtpError::SecureError(e.description().to_owned())));
+        let stream = try!(ssl_cfg.connect(self.reader.into_inner().into_tcp_stream()).map_err(|e| FtpError::SecureError(e.description().to_owned())));
+
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
-            ssl_cfg: Some(ssl_copy)
+            ssl_cfg: Some(ssl_context)
         };
         // Set protection buffer size
         try!(secured_ftp_tream.write_str("PBSZ 0\r\n"));
@@ -113,14 +115,17 @@ impl FtpStream {
     /// ## Example
     ///
     /// ```rust,no_run
+    /// use std::path::Path;
     /// use ftp::FtpStream;
-    /// use ftp::openssl::ssl::*;
+    ///
+    /// use ftp::openssl::ssl::{ SslContext, SslMethod };
     ///
     /// // Create an SslContext with a custom cert.
-    /// let mut ctx = SslContext::new(SslMethod::Sslv23).unwrap();
-    /// let _ = ctx.set_CA_file("/path/to/a/cert.pem").unwrap();
+    /// let mut ctx = SslContext::builder(SslMethod::tls()).unwrap();
+    /// let _ = ctx.set_ca_file(Path::new("/path/to/a/cert.pem")).unwrap();
+    /// let ctx = ctx.build();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// let mut ftp_stream = ftp_stream.into_secure(&ctx).unwrap();
+    /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// // Do all secret things
     /// // Switch back to the insecure mode
     /// let mut ftp_stream = ftp_stream.into_insecure().unwrap();
@@ -158,7 +163,7 @@ impl FtpStream {
             .and_then(|stream| {
                 match self.ssl_cfg {
                     Some(ref ssl) => {
-                        SslStream::connect(ssl.clone(), stream)
+                        Ssl::new(ssl).unwrap().connect(stream)
                             .map(|stream| DataStream::Ssl(stream))
                             .map_err(|e| FtpError::SecureError(e.description().to_owned()))
                     },
