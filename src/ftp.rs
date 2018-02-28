@@ -329,7 +329,7 @@ impl FtpStream {
             self.read_response_in(&[status::ABOUT_TO_SEND, status::ALREADY_OPEN])
                 .and_then(|_| reader(&mut data_stream))
         }.and_then(|res|
-            self.read_response(status::CLOSING_DATA_CONNECTION).map(|_| res))
+            self.read_response_in(&[status::CLOSING_DATA_CONNECTION,status::REQUESTED_FILE_ACTION_OK]).map(|_| res))
     }
 
     /// Simple way to retr a file from the server. This stores the file in memory.
@@ -378,11 +378,12 @@ impl FtpStream {
     /// This stores a file on the server.
     pub fn put<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         try!(self.put_file(filename, r));
-        self.read_response(status::CLOSING_DATA_CONNECTION).map(|_| ())
+        self.read_response_in(&[status::CLOSING_DATA_CONNECTION,status::REQUESTED_FILE_ACTION_OK])
+            .map(|_| ())
     }
 
     /// Execute a command which returns list of strings in a separate stream
-    fn list_command(&mut self, cmd: Cow<'static, str>, open_code: u32, close_code: u32) -> Result<Vec<String>> {
+    fn list_command(&mut self, cmd: Cow<'static, str>, open_code: u32, close_code: &[u32]) -> Result<Vec<String>> {
         let mut lines: Vec<String> = Vec::new();
         {
             let mut data_stream = BufReader::new(try!(self.data_command(&cmd)));
@@ -398,7 +399,7 @@ impl FtpStream {
             }
         }
 
-        self.read_response(close_code).map(|_| lines)
+        self.read_response_in(close_code).map(|_| lines)
     }
 
     /// Execute `LIST` command which returns the detailed file listing in human readable format.
@@ -407,7 +408,7 @@ impl FtpStream {
     pub fn list(&mut self, pathname: Option<&str>) -> Result<Vec<String>> {
         let command = pathname.map_or("LIST\r\n".into(), |path| format!("LIST {}\r\n", path).into());
 
-        self.list_command(command, status::ABOUT_TO_SEND, status::CLOSING_DATA_CONNECTION)
+        self.list_command(command, status::ABOUT_TO_SEND, &[status::CLOSING_DATA_CONNECTION,status::REQUESTED_FILE_ACTION_OK])
     }
 
     /// Execute `NLST` command which returns the list of file names only.
@@ -416,7 +417,7 @@ impl FtpStream {
     pub fn nlst(&mut self, pathname: Option<&str>) -> Result<Vec<String>> {
         let command = pathname.map_or("NLST\r\n".into(), |path| format!("NLST {}\r\n", path).into());
 
-        self.list_command(command, status::ABOUT_TO_SEND, status::CLOSING_DATA_CONNECTION)
+        self.list_command(command, status::ABOUT_TO_SEND, &[status::CLOSING_DATA_CONNECTION,status::REQUESTED_FILE_ACTION_OK])
     }
 
     /// Retrieves the modification time of the file at `pathname` if it exists.
