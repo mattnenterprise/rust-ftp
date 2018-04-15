@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `FtpStream` struct in crate `ftp`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, FtpStream">
+
+    <title>ftp::FtpStream - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle">
+    
+    <link rel="stylesheet" type="text/css" href="../dark.css">
+    <link rel="stylesheet" type="text/css" href="../main.css" id="themeStyle">
+    <script src="../storage.js"></script>
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct FtpStream</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.connect">connect</a><a href="#method.get_ref">get_ref</a><a href="#method.login">login</a><a href="#method.cwd">cwd</a><a href="#method.cdup">cdup</a><a href="#method.pwd">pwd</a><a href="#method.noop">noop</a><a href="#method.mkdir">mkdir</a><a href="#method.transfer_type">transfer_type</a><a href="#method.quit">quit</a><a href="#method.get">get</a><a href="#method.rename">rename</a><a href="#method.retr">retr</a><a href="#method.simple_retr">simple_retr</a><a href="#method.rmdir">rmdir</a><a href="#method.rm">rm</a><a href="#method.put">put</a><a href="#method.list">list</a><a href="#method.nlst">nlst</a><a href="#method.mdtm">mdtm</a><a href="#method.size">size</a><a href="#method.read_response">read_response</a><a href="#method.read_response_in">read_response_in</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Debug">Debug</a></div></div><p class='location'><a href='index.html'>ftp</a></p><script>window.sidebarCurrent = {name: 'FtpStream', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <div class="theme-picker">
+        <button id="theme-picker" aria-label="Pick another theme!">
+            <img src="../brush.svg" width="18" alt="Pick another theme!">
+        </button>
+        <div id="theme-choices"></div>
+    </div>
+    <script src="../theme.js"></script>
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>ftp</a>::<wbr><a class="struct" href=''>FtpStream</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/ftp/ftp.rs.html#34-38' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct FtpStream { /* fields omitted */ }</pre><div class='docblock'><p>Stream to interface with the FTP server. This interface is only for the command stream.</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../ftp/struct.FtpStream.html" title="struct ftp::FtpStream">FtpStream</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#40-512' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.connect' class="method"><span id='connect.v' class='invisible'><code>pub fn <a href='#method.connect' class='fnname'>connect</a>&lt;A:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/std/net/addr/trait.ToSocketAddrs.html" title="trait std::net::addr::ToSocketAddrs">ToSocketAddrs</a>&gt;(addr: A) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="struct" href="../ftp/struct.FtpStream.html" title="struct ftp::FtpStream">FtpStream</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#43-53' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Creates an FTP Stream.</p>
+</div><h4 id='method.get_ref' class="method"><div class="important-traits"><div class='tooltip'>ⓘ<span class='tooltiptext'>Important traits for &amp;'a <a class="struct" href="https://doc.rust-lang.org/nightly/std/net/tcp/struct.TcpStream.html" title="struct std::net::tcp::TcpStream">TcpStream</a></span></div><div class="content hidden"><h3 class="important">Important traits for &amp;'a <a class="struct" href="https://doc.rust-lang.org/nightly/std/net/tcp/struct.TcpStream.html" title="struct std::net::tcp::TcpStream">TcpStream</a></h3><code class="content"><span class="where fmt-newline">impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/std/io/trait.Read.html" title="trait std::io::Read">Read</a> for &amp;'a <a class="struct" href="https://doc.rust-lang.org/nightly/std/net/tcp/struct.TcpStream.html" title="struct std::net::tcp::TcpStream">TcpStream</a></span><span class="where fmt-newline">impl <a class="trait" href="https://doc.rust-lang.org/nightly/std/io/trait.Read.html" title="trait std::io::Read">Read</a> for <a class="struct" href="https://doc.rust-lang.org/nightly/std/net/tcp/struct.TcpStream.html" title="struct std::net::tcp::TcpStream">TcpStream</a></span><span class="where fmt-newline">impl <a class="trait" href="https://doc.rust-lang.org/nightly/std/io/trait.Write.html" title="trait std::io::Write">Write</a> for <a class="struct" href="https://doc.rust-lang.org/nightly/std/net/tcp/struct.TcpStream.html" title="struct std::net::tcp::TcpStream">TcpStream</a></span><span class="where fmt-newline">impl&lt;'a&gt; <a class="trait" href="https://doc.rust-lang.org/nightly/std/io/trait.Write.html" title="trait std::io::Write">Write</a> for &amp;'a <a class="struct" href="https://doc.rust-lang.org/nightly/std/net/tcp/struct.TcpStream.html" title="struct std::net::tcp::TcpStream">TcpStream</a></span></code></div></div><span id='get_ref.v' class='invisible'><code>pub fn <a href='#method.get_ref' class='fnname'>get_ref</a>(&amp;self) -&gt; &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/net/tcp/struct.TcpStream.html" title="struct std::net::tcp::TcpStream">TcpStream</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#186-188' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a reference to the underlying TcpStream.</p>
+<p>Example:</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">net</span>::<span class="ident">TcpStream</span>;
+
+<span class="kw">let</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">FtpStream</span>::<span class="ident">connect</span>(<span class="string">&quot;127.0.0.1:21&quot;</span>)
+                       .<span class="ident">expect</span>(<span class="string">&quot;Couldn&#39;t connect to the server...&quot;</span>);
+<span class="ident">stream</span>.<span class="ident">get_ref</span>().<span class="ident">set_read_timeout</span>(<span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">10</span>))
+                .<span class="ident">expect</span>(<span class="string">&quot;set_read_timeout call failed&quot;</span>);</pre>
+</div><h4 id='method.login' class="method"><span id='login.v' class='invisible'><code>pub fn <a href='#method.login' class='fnname'>login</a>(&amp;mut self, user: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, password: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#191-201' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Log in to the FTP server.</p>
+</div><h4 id='method.cwd' class="method"><span id='cwd.v' class='invisible'><code>pub fn <a href='#method.cwd' class='fnname'>cwd</a>(&amp;mut self, path: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#204-207' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Change the current directory to the path specified.</p>
+</div><h4 id='method.cdup' class="method"><span id='cdup.v' class='invisible'><code>pub fn <a href='#method.cdup' class='fnname'>cdup</a>(&amp;mut self) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#210-213' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Move the current directory to the parent directory.</p>
+</div><h4 id='method.pwd' class="method"><span id='pwd.v' class='invisible'><code>pub fn <a href='#method.pwd' class='fnname'>pwd</a>(&amp;mut self) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#216-230' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Gets the current directory</p>
+</div><h4 id='method.noop' class="method"><span id='noop.v' class='invisible'><code>pub fn <a href='#method.noop' class='fnname'>noop</a>(&amp;mut self) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#233-236' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This does nothing. This is usually just used to keep the connection open.</p>
+</div><h4 id='method.mkdir' class="method"><span id='mkdir.v' class='invisible'><code>pub fn <a href='#method.mkdir' class='fnname'>mkdir</a>(&amp;mut self, pathname: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#239-242' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This creates a new directory on the server.</p>
+</div><h4 id='method.transfer_type' class="method"><span id='transfer_type.v' class='invisible'><code>pub fn <a href='#method.transfer_type' class='fnname'>transfer_type</a>(&amp;mut self, file_type: <a class="enum" href="../ftp/types/enum.FileType.html" title="enum ftp::types::FileType">FileType</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#272-276' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Sets the type of file to be transferred. That is the implementation
+of <code>TYPE</code> command.</p>
+</div><h4 id='method.quit' class="method"><span id='quit.v' class='invisible'><code>pub fn <a href='#method.quit' class='fnname'>quit</a>(&amp;mut self) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#279-282' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Quits the current FTP session.</p>
+</div><h4 id='method.get' class="method"><span id='get.v' class='invisible'><code>pub fn <a href='#method.get' class='fnname'>get</a>(&amp;mut self, file_name: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/io/buffered/struct.BufReader.html" title="struct std::io::buffered::BufReader">BufReader</a>&lt;DataStream&gt;&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#288-292' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Retrieves the file name specified from the server.
+This method is a more complicated way to retrieve a file.
+The reader returned should be dropped.
+Also you will have to read the response to make sure it has the correct value.</p>
+</div><h4 id='method.rename' class="method"><span id='rename.v' class='invisible'><code>pub fn <a href='#method.rename' class='fnname'>rename</a>(&amp;mut self, from_name: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, to_name: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#295-302' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Renames the file from_name to to_name</p>
+</div><h4 id='method.retr' class="method"><span id='retr.v' class='invisible'><code>pub fn <a href='#method.retr' class='fnname'>retr</a>&lt;F, T&gt;(&amp;mut self, filename: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, reader: F) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;T&gt; <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;F: <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/function/trait.Fn.html" title="trait core::ops::function::Fn">Fn</a>(&amp;mut <a class="trait" href="https://doc.rust-lang.org/nightly/std/io/trait.Read.html" title="trait std::io::Read">Read</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;T&gt;,&nbsp;</span></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#324-333' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>The implementation of <code>RETR</code> command where <code>filename</code> is the name of the file
+to download from FTP and <code>reader</code> is the function which operates with the
+data stream opened.</p>
+
+<pre class="rust rust-example-rendered">
+<span class="macro">assert</span><span class="macro">!</span>(<span class="ident">conn</span>.<span class="ident">retr</span>(<span class="string">&quot;retr.txt&quot;</span>, <span class="op">|</span><span class="ident">stream</span><span class="op">|</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">new</span>();
+    <span class="ident">stream</span>.<span class="ident">read_to_end</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buf</span>).<span class="ident">map</span>(<span class="op">|</span>_<span class="op">|</span>
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">buf</span>, <span class="string">&quot;hello, world!&quot;</span>.<span class="ident">as_bytes</span>())
+    ).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">FtpError</span>::<span class="ident">ConnectionError</span>(<span class="ident">e</span>))
+}).<span class="ident">is_ok</span>());</pre>
+</div><h4 id='method.simple_retr' class="method"><span id='simple_retr.v' class='invisible'><code>pub fn <a href='#method.simple_retr' class='fnname'>simple_retr</a>(&amp;mut self, file_name: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/std/io/cursor/struct.Cursor.html" title="struct std::io::cursor::Cursor">Cursor</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>&gt;&gt;&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#350-355' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Simple way to retr a file from the server. This stores the file in memory.</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">cursor</span> <span class="op">=</span> <span class="ident">conn</span>.<span class="ident">simple_retr</span>(<span class="string">&quot;simple_retr.txt&quot;</span>).<span class="ident">unwrap</span>();
+<span class="comment">// do something with bytes</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">cursor</span>.<span class="ident">into_inner</span>(), <span class="string">&quot;hello, world!&quot;</span>.<span class="ident">as_bytes</span>());</pre>
+</div><h4 id='method.rmdir' class="method"><span id='rmdir.v' class='invisible'><code>pub fn <a href='#method.rmdir' class='fnname'>rmdir</a>(&amp;mut self, pathname: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#358-361' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Removes the remote pathname from the server.</p>
+</div><h4 id='method.rm' class="method"><span id='rm.v' class='invisible'><code>pub fn <a href='#method.rm' class='fnname'>rm</a>(&amp;mut self, filename: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#364-367' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Remove the remote file from the server.</p>
+</div><h4 id='method.put' class="method"><span id='put.v' class='invisible'><code>pub fn <a href='#method.put' class='fnname'>put</a>&lt;R:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/std/io/trait.Read.html" title="trait std::io::Read">Read</a>&gt;(&amp;mut self, filename: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, r: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>R) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#379-383' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This stores a file on the server.</p>
+</div><h4 id='method.list' class="method"><span id='list.v' class='invisible'><code>pub fn <a href='#method.list' class='fnname'>list</a>(&amp;mut self, pathname: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>&gt;) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#408-412' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Execute <code>LIST</code> command which returns the detailed file listing in human readable format.
+If <code>pathname</code> is omited then the list of files in the current directory will be
+returned otherwise it will the list of files on <code>pathname</code>.</p>
+</div><h4 id='method.nlst' class="method"><span id='nlst.v' class='invisible'><code>pub fn <a href='#method.nlst' class='fnname'>nlst</a>(&amp;mut self, pathname: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>&gt;) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#417-421' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Execute <code>NLST</code> command which returns the list of file names only.
+If <code>pathname</code> is omited then the list of files in the current directory will be
+returned otherwise it will the list of files on <code>pathname</code>.</p>
+</div><h4 id='method.mdtm' class="method"><span id='mdtm.v' class='invisible'><code>pub fn <a href='#method.mdtm' class='fnname'>mdtm</a>(&amp;mut self, pathname: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="../chrono/datetime/struct.DateTime.html" title="struct chrono::datetime::DateTime">DateTime</a>&lt;<a class="struct" href="../chrono/offset/utc/struct.UTC.html" title="struct chrono::offset::utc::UTC">UTC</a>&gt;&gt;&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#425-445' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Retrieves the modification time of the file at <code>pathname</code> if it exists.
+In case the file does not exist <code>None</code> is returned.</p>
+</div><h4 id='method.size' class="method"><span id='size.v' class='invisible'><code>pub fn <a href='#method.size' class='fnname'>size</a>(&amp;mut self, pathname: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>&gt;&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#449-457' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Retrieves the size of the file in bytes at <code>pathname</code> if it exists.
+In case the file does not exist <code>None</code> is returned.</p>
+</div><h4 id='method.read_response' class="method"><span id='read_response.v' class='invisible'><code>pub fn <a href='#method.read_response' class='fnname'>read_response</a>(&amp;mut self, expected_code: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="struct" href="../ftp/types/struct.Line.html" title="struct ftp::types::Line">Line</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#469-471' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.read_response_in' class="method"><span id='read_response_in.v' class='invisible'><code>pub fn <a href='#method.read_response_in' class='fnname'>read_response_in</a>(&amp;mut self, expected_code: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="type" href="../ftp/types/type.Result.html" title="type ftp::types::Result">Result</a>&lt;<a class="struct" href="../ftp/types/struct.Line.html" title="struct ftp::types::Line">Line</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#474-511' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Retrieve single line response</p>
+</div></div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../ftp/struct.FtpStream.html" title="struct ftp::FtpStream">FtpStream</a></code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#33' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/ftp/ftp.rs.html#33' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt><kbd>?</kbd></dt>
+                    <dd>Show this help dialog</dd>
+                    <dt><kbd>S</kbd></dt>
+                    <dd>Focus the search field</dd>
+                    <dt><kbd>↑</kbd></dt>
+                    <dd>Move up in search results</dd>
+                    <dt><kbd>↓</kbd></dt>
+                    <dd>Move down in search results</dd>
+                    <dt><kbd>↹</kbd></dt>
+                    <dd>Switch tab</dd>
+                    <dt><kbd>&#9166;</kbd></dt>
+                    <dd>Go to active search result</dd>
+                    <dt><kbd>+</kbd></dt>
+                    <dd>Expand all sections</dd>
+                    <dt><kbd>-</kbd></dt>
+                    <dd>Collapse all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "ftp";
+    </script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>
