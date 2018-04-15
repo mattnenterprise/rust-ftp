@@ -209,7 +209,7 @@ impl FtpStream {
     /// Move the current directory to the parent directory.
     pub fn cdup(&mut self) -> Result<()> {
         try!(self.write_str("CDUP\r\n"));
-        self.read_response(status::REQUESTED_FILE_ACTION_OK).map(|_| ())
+        self.read_response_in(&[status::COMMAND_OK, status::REQUESTED_FILE_ACTION_OK]).map(|_| ())
     }
 
     /// Gets the current directory
