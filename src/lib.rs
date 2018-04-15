@@ -45,10 +45,10 @@
 //! ```
 //!
 
-
-#[macro_use] extern crate lazy_static;
-extern crate regex;
 extern crate chrono;
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
 
 #[cfg(feature = "secure")]
 pub extern crate openssl;
