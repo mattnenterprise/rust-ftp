@@ -47,6 +47,7 @@
 
 
 #[macro_use] extern crate lazy_static;
+#[macro_use] extern crate log;
 extern crate regex;
 extern crate chrono;
 
