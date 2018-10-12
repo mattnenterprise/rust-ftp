@@ -8,6 +8,7 @@ use std::net::{TcpStream, SocketAddr};
 use std::string::String;
 use std::str::FromStr;
 use std::net::ToSocketAddrs;
+use std::time::Duration;
 use regex::Regex;
 use chrono::{DateTime, UTC};
 use chrono::offset::TimeZone;
@@ -51,7 +52,20 @@ impl FtpStream {
                     .map(|_| ftp_stream)
             })
     }
-    
+
+    /// Creates an FTP Stream.
+    #[cfg(not(feature = "secure"))]
+    pub fn connect_with_timeout(addr: &SocketAddr, timeout: Duration) -> Result<FtpStream> {
+        TcpStream::connect_timeout(addr, timeout)
+            .map_err(|e| FtpError::ConnectionError(e))
+            .and_then(|stream| {
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Tcp(stream)),
+                };
+                ftp_stream.read_response(status::READY).map(|_| ftp_stream)
+            })
+    }
+
     /// Creates an FTP Stream.
     #[cfg(feature = "secure")]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
@@ -67,6 +81,21 @@ impl FtpStream {
             })
     }
     
+    /// Creates an FTP Stream.
+    #[cfg(feature = "secure")]
+    pub fn connect_with_timeout(addr: &SocketAddr, timeout: Duration) -> Result<FtpStream> {
+        TcpStream::connect_timeout(addr, timeout)
+            .map_err(|e| FtpError::ConnectionError(e))
+            .and_then(|stream| {
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Tcp(stream)),
+                    ssl_cfg: None,
+                };
+                ftp_stream.read_response(status::READY)
+                    .map(|_| ftp_stream)
+            })
+    }
+
     /// Switch to a secure mode if possible, using a provided SSL configuration.
     /// This method does nothing if the connect is already secured.
     ///
