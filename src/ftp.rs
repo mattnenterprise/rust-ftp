@@ -38,7 +38,7 @@ pub struct FtpStream {
 }
 
 impl FtpStream {
-    /// Creates an FTP Stream.
+    /// Creates a FTP Stream.
     #[cfg(not(feature = "secure"))]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
         TcpStream::connect(addr)
@@ -52,7 +52,7 @@ impl FtpStream {
             })
     }
     
-    /// Creates an FTP Stream.
+    /// Creates a FTP Stream.
     #[cfg(feature = "secure")]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
         TcpStream::connect(addr)
