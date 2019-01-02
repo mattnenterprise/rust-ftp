@@ -66,6 +66,19 @@ impl FtpStream {
                     .map(|_| ftp_stream)
             })
     }
+
+    /// Creates a FTP Stream from an existing TcpStream.
+    /// This method is useful, if you want to do the connection setup on your own.
+    pub fn from_tcp(stream: TcpStream) -> Result<FtpStream> {
+        let mut ftp_stream = FtpStream {
+            reader: BufReader::new(DataStream::Tcp(stream)),
+            #[cfg(feature = "secure")]
+            ssl_cfg: None,
+        };
+
+        ftp_stream.read_response(status::READY)
+            .map(|_| ftp_stream)
+    }
     
     /// Switch to a secure mode if possible, using a provided SSL configuration.
     /// This method does nothing if the connect is already secured.
