@@ -27,7 +27,7 @@ debug_print = []
 
 [dependencies]
 lazy_static = "1.2"
-regex = "0.1"
+regex = "1.1"
 chrono = "0.4"
 
 [dependencies.openssl]
