@@ -1,6 +1,6 @@
 [package]
 name = "ftp"
-version = "3.0.1"
+version = "3.1.1"
 authors = ["Matt McCoy <mattnenterprise@yahoo.com>"]
 documentation = "https://docs.rs/ftp/"
 repository = "https://github.com/mattnenterprise/rust-ftp"
@@ -28,7 +28,7 @@ debug_print = []
 [dependencies]
 lazy_static = "0.1"
 regex = "0.1"
-chrono = "0.2"
+chrono = "0.4"
 
 [dependencies.openssl]
 version = "0.9"
