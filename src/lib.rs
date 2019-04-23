@@ -29,6 +29,7 @@
 //! ### FTPS Usage
 //!
 //! ```rust,no_run
+//! #[cfg(feature="secure")]{
 //! use ftp::FtpStream;
 //! use ftp::openssl::ssl::{ SslContext, SslMethod };
 //!
@@ -42,6 +43,7 @@
 //! let mut ftp_stream = ftp_stream.into_insecure().unwrap();
 //! // Do all public stuff
 //! let _ = ftp_stream.quit();
+//! }
 //! ```
 //!
 
