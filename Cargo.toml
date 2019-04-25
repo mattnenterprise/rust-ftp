@@ -31,5 +31,5 @@ regex = "0.1"
 chrono = "0.2"
 
 [dependencies.openssl]
-version = "0.9"
+version = "0.10"
 optional = true

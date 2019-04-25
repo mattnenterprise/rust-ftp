@@ -51,7 +51,7 @@ impl FtpStream {
                     .map(|_| ftp_stream)
             })
     }
-    
+
     /// Creates an FTP Stream.
     #[cfg(feature = "secure")]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<FtpStream> {
@@ -66,7 +66,7 @@ impl FtpStream {
                     .map(|_| ftp_stream)
             })
     }
-    
+
     /// Switch to a secure mode if possible, using a provided SSL configuration.
     /// This method does nothing if the connect is already secured.
     ///
@@ -108,7 +108,7 @@ impl FtpStream {
         try!(secured_ftp_tream.read_response(status::COMMAND_OK));
         Ok(secured_ftp_tream)
     }
-    
+
     /// Switch to insecure mode. If the connection is already
     /// insecure does nothing.
     ///
@@ -143,7 +143,7 @@ impl FtpStream {
         };
         Ok(plain_ftp_stream)
     }
-    
+
     /// Execute command which send data back in a separate stream
     #[cfg(not(feature = "secure"))]
     fn data_command(&mut self, cmd: &str) -> Result<DataStream> {
@@ -177,10 +177,12 @@ impl FtpStream {
     /// Example:
     /// ```no_run
     /// use std::net::TcpStream;
+    /// use ftp::FtpStream;
+    /// use std::time::Duration;
     ///
     /// let stream = FtpStream::connect("127.0.0.1:21")
     ///                        .expect("Couldn't connect to the server...");
-    /// stream.get_ref().set_read_timeout(Duration::from_secs(10))
+    /// stream.get_ref().set_read_timeout(Some(Duration::from_secs(10)))
     ///                 .expect("set_read_timeout call failed");
     /// ```
     pub fn get_ref(&self) -> &TcpStream {
