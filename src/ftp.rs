@@ -324,7 +324,7 @@ impl FtpStream {
     /// # assert!(conn.rm("retr.txt").is_ok());
     /// ```
     pub fn retr<F, T>(&mut self, filename: &str, reader: F) -> Result<T>
-    where F: Fn(&mut Read) -> Result<T> {
+    where F: Fn(&mut dyn Read) -> Result<T> {
         let retr_command = format!("RETR {}\r\n", filename);
         {
             let mut data_stream = BufReader::new(try!(self.data_command(&retr_command)));

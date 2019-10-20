@@ -91,7 +91,7 @@ impl Error for FtpError {
         }
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         match *self {
             FtpError::ConnectionError(ref ioerr) => Some(ioerr),
             FtpError::SecureError(_)             => None,
