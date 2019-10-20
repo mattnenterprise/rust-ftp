@@ -177,10 +177,12 @@ impl FtpStream {
     /// Example:
     /// ```no_run
     /// use std::net::TcpStream;
+    /// use ftp::FtpStream;
+    /// use std::time::Duration;
     ///
     /// let stream = FtpStream::connect("127.0.0.1:21")
     ///                        .expect("Couldn't connect to the server...");
-    /// stream.get_ref().set_read_timeout(Duration::from_secs(10))
+    /// stream.get_ref().set_read_timeout(Some(Duration::from_secs(10)))
     ///                 .expect("set_read_timeout call failed");
     /// ```
     pub fn get_ref(&self) -> &TcpStream {
