@@ -175,7 +175,7 @@ impl FtpStream {
     /// Returns a reference to the underlying TcpStream.
     ///
     /// Example:
-    /// ```no_run
+    /// ```ignore
     /// use std::net::TcpStream;
     ///
     /// let stream = FtpStream::connect("127.0.0.1:21")
