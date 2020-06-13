@@ -263,7 +263,13 @@ impl FtpStream {
                     caps[6].parse::<u8>().unwrap()
                 );
                 let port = ((msb as u16) << 8) + lsb as u16;
-                let ip = IpAddr::V4(Ipv4Addr::new(oct1, oct2, oct3, oct4));
+                let ip = match (oct1, oct2, oct3, oct4) {
+                    // This branch handles IPv6 in particular
+                    (0, 0, 0, 0) =>
+                        self.get_ref().peer_addr().map_err(FtpError::ConnectionError)?.ip(),
+                    _ =>
+                        IpAddr::V4(Ipv4Addr::new(oct1, oct2, oct3, oct4)),
+                };
                 Ok(SocketAddr::new(ip, port))
             })
     }
