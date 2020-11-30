@@ -7,7 +7,7 @@ use std::string::String;
 use std::str::FromStr;
 use std::net::ToSocketAddrs;
 use regex::Regex;
-use chrono::{DateTime, UTC};
+use chrono::{DateTime, Utc};
 use chrono::offset::TimeZone;
 #[cfg(feature = "secure")]
 use openssl::ssl::{ SslContext, Ssl };
@@ -175,10 +175,12 @@ impl FtpStream {
     /// Example:
     /// ```no_run
     /// use std::net::TcpStream;
+    /// use ftp::FtpStream;
+    /// use std::time::Duration;
     ///
     /// let stream = FtpStream::connect("127.0.0.1:21")
     ///                        .expect("Couldn't connect to the server...");
-    /// stream.get_ref().set_read_timeout(Duration::from_secs(10))
+    /// stream.get_ref().set_read_timeout(Some(Duration::from_secs(10)))
     ///                 .expect("set_read_timeout call failed");
     /// ```
     pub fn get_ref(&self) -> &TcpStream {
@@ -436,7 +438,7 @@ impl FtpStream {
                     caps[5].parse::<u32>().unwrap(),
                     caps[6].parse::<u32>().unwrap()
                 );
-                Ok(Some(UTC.ymd(year, month, day).and_hms(hour, minute, second)))
+                Ok(Some(Utc.ymd(year, month, day).and_hms(hour, minute, second)))
             },
             None => Ok(None)
         }
