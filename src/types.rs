@@ -1,7 +1,6 @@
 //! The set of valid values for FTP commands
 
 use std::convert::From;
-use std::error::Error;
 use std::fmt;
 
 /// A shorthand for a Result whose error type is always an FtpError.
@@ -81,22 +80,3 @@ impl fmt::Display for FtpError {
     }
 }
 
-impl Error for FtpError {
-    fn description(&self) -> &str {
-        match *self {
-            FtpError::ConnectionError(ref ioerr) => ioerr.description(),
-            FtpError::SecureError(ref desc)      => desc.as_str(),
-            FtpError::InvalidResponse(ref desc)  => desc.as_str(),
-            FtpError::InvalidAddress(ref perr)   => perr.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&Error> {
-        match *self {
-            FtpError::ConnectionError(ref ioerr) => Some(ioerr),
-            FtpError::SecureError(_)             => None,
-            FtpError::InvalidResponse(_)         => None,
-            FtpError::InvalidAddress(ref perr)   => Some(perr)
-        }
-    }
-}
