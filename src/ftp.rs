@@ -367,15 +367,28 @@ impl FtpStream {
     }
 
     fn put_file<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
-        let stor_command = format!("STOR {}\r\n", filename);
-        let mut data_stream = BufWriter::new(try!(self.data_command(&stor_command)));
+        // Get stream
+        let mut data_stream = self.put_with_stream(filename)?;
         try!(self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND]));
         copy(r, &mut data_stream)
             .map_err(|read_err| FtpError::ConnectionError(read_err))
             .map(|_| ())
     }
 
+    /// ### put_with_stream
+    /// 
+    /// Send PUT command and returns a BufWriter, which references the file created on the server
+    /// The returned stream must be then correctly manipulated to write the content of the source file to the remote destination
+    /// The stream must be then correctly dropped.
+    pub fn put_with_stream(&mut self, filename: &str) -> Result<BufWriter<DataStream>> {
+        let stor_command = format!("STOR {}\r\n", filename);
+        Ok(BufWriter::new(self.data_command(&stor_command)?))
+    }
+
+    /// ### put
+    /// 
     /// This stores a file on the server.
+    /// r argument must be any struct which implemenents the Read trait
     pub fn put<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         try!(self.put_file(filename, r));
         self.read_response_in(&[status::CLOSING_DATA_CONNECTION,status::REQUESTED_FILE_ACTION_OK])
