@@ -1,8 +1,8 @@
 extern crate ftp;
 
-use std::str;
+use ftp::{FtpError, FtpStream};
 use std::io::Cursor;
-use ftp::{FtpStream, FtpError};
+use std::str;
 
 fn test_ftp(addr: &str, user: &str, pass: &str) -> Result<(), FtpError> {
     let mut ftp_stream = FtpStream::connect((addr, 21)).unwrap();

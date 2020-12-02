@@ -45,18 +45,18 @@
 //! ```
 //!
 
-
-#[macro_use] extern crate lazy_static;
-extern crate regex;
+#[macro_use]
+extern crate lazy_static;
 extern crate chrono;
+extern crate regex;
 
 #[cfg(feature = "secure")]
 pub extern crate openssl;
 
-mod ftp;
 mod data_stream;
-pub mod types;
+mod ftp;
 pub mod status;
+pub mod types;
 
 pub use self::ftp::FtpStream;
 pub use self::types::FtpError;

@@ -29,7 +29,6 @@ pub enum FormatControl {
     Asa,
 }
 
-
 /// File Type used in `TYPE` command
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum FileType {
@@ -73,10 +72,11 @@ impl fmt::Display for FtpError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             FtpError::ConnectionError(ref ioerr) => write!(f, "FTP ConnectionError: {}", ioerr),
-            FtpError::SecureError(ref desc)      => write!(f, "FTP SecureError: {}", desc.clone()),
-            FtpError::InvalidResponse(ref desc)  => write!(f, "FTP InvalidResponse: {}", desc.clone()),
-            FtpError::InvalidAddress(ref perr)   => write!(f, "FTP InvalidAddress: {}", perr),
+            FtpError::SecureError(ref desc) => write!(f, "FTP SecureError: {}", desc.clone()),
+            FtpError::InvalidResponse(ref desc) => {
+                write!(f, "FTP InvalidResponse: {}", desc.clone())
+            }
+            FtpError::InvalidAddress(ref perr) => write!(f, "FTP InvalidAddress: {}", perr),
         }
     }
 }
-

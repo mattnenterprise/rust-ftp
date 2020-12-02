@@ -27,7 +27,9 @@ script:
   |
     travis-cargo build &&
     travis-cargo test -- --features secure &&
-    travis-cargo --only stable doc
+    travis-cargo --only stable doc &&
+    rustup component add rustfmt &&
+    cargo fmt --all -- --check
 
 after_success:
   # upload the documentation from the build with stable (automatically only actually
