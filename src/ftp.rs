@@ -80,7 +80,7 @@ impl FtpStream {
     /// use ftp::FtpStream;
     /// use ftp::native_tls::{TlsConnector, TlsStream};
     ///
-    /// // Create a TlsConnector with a custom cert. 
+    /// // Create a TlsConnector with a custom cert.
     /// // NOTE: For custom options see <https://docs.rs/native-tls/0.2.6/native_tls/struct.TlsConnectorBuilder.html>
     /// let mut ctx = TlsConnector::new().unwrap();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
@@ -91,7 +91,9 @@ impl FtpStream {
         // Ask the server to start securing data.
         self.write_str("AUTH TLS\r\n")?;
         self.read_response(status::AUTH_OK)?;
-        let stream = tls_connector.connect(domain, self.reader.into_inner().into_tcp_stream()).map_err(|e| FtpError::SecureError(format!("{}", e)))?;
+        let stream = tls_connector
+            .connect(domain, self.reader.into_inner().into_tcp_stream())
+            .map_err(|e| FtpError::SecureError(format!("{}", e)))?;
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
             tls_ctx: Some(tls_connector),
@@ -157,15 +159,12 @@ impl FtpStream {
         self.pasv()
             .and_then(|addr| self.write_str(cmd).map(|_| addr))
             .and_then(|addr| TcpStream::connect(addr).map_err(|e| FtpError::ConnectionError(e)))
-            .and_then(|stream| {
-                match self.tls_ctx {
-                    Some(ref tls_ctx) => {
-                        tls_ctx.connect(self.domain.as_ref().unwrap(), stream)
-                            .map(|stream| DataStream::Ssl(stream))
-                            .map_err(|e| FtpError::SecureError(format!("{}", e)))
-                    },
-                    None => Ok(DataStream::Tcp(stream))
-                }
+            .and_then(|stream| match self.tls_ctx {
+                Some(ref tls_ctx) => tls_ctx
+                    .connect(self.domain.as_ref().unwrap(), stream)
+                    .map(|stream| DataStream::Ssl(stream))
+                    .map_err(|e| FtpError::SecureError(format!("{}", e))),
+                None => Ok(DataStream::Tcp(stream)),
             })
     }
 
@@ -286,10 +285,7 @@ impl FtpStream {
     pub fn get(&mut self, file_name: &str) -> Result<BufReader<DataStream>> {
         let retr_command = format!("RETR {}\r\n", file_name);
         let data_stream = BufReader::new(self.data_command(&retr_command)?);
-        self.read_response_in(&[
-            status::ABOUT_TO_SEND,
-            status::ALREADY_OPEN
-        ])?;
+        self.read_response_in(&[status::ABOUT_TO_SEND, status::ALREADY_OPEN])?;
         Ok(data_stream)
     }
 
@@ -415,18 +411,19 @@ impl FtpStream {
         loop {
             let line = lines_stream.next();
             match line {
-                Some(line) => {
-                    match line {
-                        Ok(l) => {
-                            if l.is_empty() {
-                                continue;
-                            }
-                            lines.push(l);
+                Some(line) => match line {
+                    Ok(l) => {
+                        if l.is_empty() {
+                            continue;
                         }
-                        Err(_) => return Err(FtpError::InvalidResponse(String::from("Invalid lines in response")))
+                        lines.push(l);
                     }
-                    
-                }
+                    Err(_) => {
+                        return Err(FtpError::InvalidResponse(String::from(
+                            "Invalid lines in response",
+                        )))
+                    }
+                },
                 None => break Ok(lines),
             }
         }
