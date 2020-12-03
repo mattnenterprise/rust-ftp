@@ -284,7 +284,6 @@ impl FtpStream {
     pub fn get(&mut self, file_name: &str) -> Result<BufReader<DataStream>> {
         let retr_command = format!("RETR {}\r\n", file_name);
         let data_stream = BufReader::new(self.data_command(&retr_command)?);
-        self.read_response(status::ABOUT_TO_SEND)?;
         self.read_response_in(&[
             status::ABOUT_TO_SEND,
             status::ALREADY_OPEN
