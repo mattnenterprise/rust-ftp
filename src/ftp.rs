@@ -201,13 +201,15 @@ impl FtpStream {
     /// Change the current directory to the path specified.
     pub fn cwd(&mut self, path: &str) -> Result<()> {
         self.write_str(format!("CWD {}\r\n", path))?;
-        self.read_response(status::REQUESTED_FILE_ACTION_OK).map(|_| ())
+        self.read_response(status::REQUESTED_FILE_ACTION_OK)
+            .map(|_| ())
     }
 
     /// Move the current directory to the parent directory.
     pub fn cdup(&mut self) -> Result<()> {
         self.write_str("CDUP\r\n")?;
-        self.read_response_in(&[status::COMMAND_OK, status::REQUESTED_FILE_ACTION_OK]).map(|_| ())
+        self.read_response_in(&[status::COMMAND_OK, status::REQUESTED_FILE_ACTION_OK])
+            .map(|_| ())
     }
 
     /// Gets the current directory
@@ -244,8 +246,12 @@ impl FtpStream {
         self.write_str("PASV\r\n")?;
         // PASV response format : 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2).
         let Line(_, line) = self.read_response(status::PASSIVE_MODE)?;
-        PORT_RE.captures(&line)
-            .ok_or(FtpError::InvalidResponse(format!("Invalid PASV response: {}", line)))
+        PORT_RE
+            .captures(&line)
+            .ok_or(FtpError::InvalidResponse(format!(
+                "Invalid PASV response: {}",
+                line
+            )))
             .and_then(|caps| {
                 // If the regex matches we can be sure groups contains numbers
                 let (oct1, oct2, oct3, oct4) = (
@@ -295,7 +301,8 @@ impl FtpStream {
         self.read_response(status::REQUEST_FILE_PENDING)
             .and_then(|_| {
                 self.write_str(format!("RNTO {}\r\n", to_name))?;
-                self.read_response(status::REQUESTED_FILE_ACTION_OK).map(|_| ())
+                self.read_response(status::REQUESTED_FILE_ACTION_OK)
+                    .map(|_| ())
             })
     }
 
@@ -320,7 +327,9 @@ impl FtpStream {
     /// # assert!(conn.rm("retr.txt").is_ok());
     /// ```
     pub fn retr<F, T>(&mut self, filename: &str, reader: F) -> Result<T>
-    where F: Fn(&mut dyn Read) -> Result<T> {
+    where
+        F: Fn(&mut dyn Read) -> Result<T>,
+    {
         let retr_command = format!("RETR {}\r\n", filename);
         {
             let mut data_stream = BufReader::new(self.data_command(&retr_command)?);
@@ -365,13 +374,15 @@ impl FtpStream {
     /// Removes the remote pathname from the server.
     pub fn rmdir(&mut self, pathname: &str) -> Result<()> {
         self.write_str(format!("RMD {}\r\n", pathname))?;
-        self.read_response(status::REQUESTED_FILE_ACTION_OK).map(|_| ())
+        self.read_response(status::REQUESTED_FILE_ACTION_OK)
+            .map(|_| ())
     }
 
     /// Remove the remote file from the server.
     pub fn rm(&mut self, filename: &str) -> Result<()> {
         self.write_str(format!("DELE {}\r\n", filename))?;
-        self.read_response(status::REQUESTED_FILE_ACTION_OK).map(|_| ())
+        self.read_response(status::REQUESTED_FILE_ACTION_OK)
+            .map(|_| ())
     }
 
     fn put_file<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
@@ -386,8 +397,11 @@ impl FtpStream {
     /// This stores a file on the server.
     pub fn put<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         self.put_file(filename, r)?;
-        self.read_response_in(&[status::CLOSING_DATA_CONNECTION,status::REQUESTED_FILE_ACTION_OK])
-            .map(|_| ())
+        self.read_response_in(&[
+            status::CLOSING_DATA_CONNECTION,
+            status::REQUESTED_FILE_ACTION_OK,
+        ])
+        .map(|_| ())
     }
 
     /// Execute a command which returns list of strings in a separate stream
@@ -483,9 +497,11 @@ impl FtpStream {
                     caps[5].parse::<u32>().unwrap(),
                     caps[6].parse::<u32>().unwrap(),
                 );
-                Ok(Some(Utc.ymd(year, month, day).and_hms(hour, minute, second)))
-            },
-            None => Ok(None)
+                Ok(Some(
+                    Utc.ymd(year, month, day).and_hms(hour, minute, second),
+                ))
+            }
+            None => Ok(None),
         }
     }
 
@@ -519,8 +535,9 @@ impl FtpStream {
     /// Retrieve single line response
     pub fn read_response_in(&mut self, expected_code: &[u32]) -> Result<Line> {
         let mut line = String::new();
-        self.reader.read_line(&mut line)
-             .map_err(|read_err| FtpError::ConnectionError(read_err))?;
+        self.reader
+            .read_line(&mut line)
+            .map_err(|read_err| FtpError::ConnectionError(read_err))?;
 
         if cfg!(feature = "debug_print") {
             print!("FTP {}", line);
@@ -532,10 +549,9 @@ impl FtpStream {
             ));
         }
 
-        let code: u32 = line[0..3].parse()
-                             .map_err(|err| {
-                                 FtpError::InvalidResponse(format!("error: could not parse reply code: {}", err))
-                             })?;
+        let code: u32 = line[0..3].parse().map_err(|err| {
+            FtpError::InvalidResponse(format!("error: could not parse reply code: {}", err))
+        })?;
 
         // multiple line reply
         // loop while the line does not begin with the code and a space
