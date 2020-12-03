@@ -369,7 +369,6 @@ impl FtpStream {
     fn put_file<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
         // Get stream
         let mut data_stream = self.put_with_stream(filename)?;
-        try!(self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND]));
         copy(r, &mut data_stream)
             .map_err(|read_err| FtpError::ConnectionError(read_err))
             .map(|_| ())
@@ -382,7 +381,9 @@ impl FtpStream {
     /// The stream must be then correctly dropped.
     pub fn put_with_stream(&mut self, filename: &str) -> Result<BufWriter<DataStream>> {
         let stor_command = format!("STOR {}\r\n", filename);
-        Ok(BufWriter::new(self.data_command(&stor_command)?))
+        let stream = BufWriter::new(self.data_command(&stor_command)?);
+        try!(self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND]));
+        Ok(stream)
     }
 
     /// ### put
