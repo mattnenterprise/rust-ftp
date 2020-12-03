@@ -284,7 +284,12 @@ impl FtpStream {
     pub fn get(&mut self, file_name: &str) -> Result<BufReader<DataStream>> {
         let retr_command = format!("RETR {}\r\n", file_name);
         let data_stream = BufReader::new(self.data_command(&retr_command)?);
-        self.read_response(status::ABOUT_TO_SEND).map(|_| data_stream)
+        self.read_response(status::ABOUT_TO_SEND)?;
+        self.read_response_in(&[
+            status::ABOUT_TO_SEND,
+            status::ALREADY_OPEN
+        ])?;
+        Ok(data_stream)
     }
 
     /// Renames the file from_name to to_name
@@ -395,27 +400,35 @@ impl FtpStream {
         open_code: u32,
         close_code: &[u32],
     ) -> Result<Vec<String>> {
-        let mut lines: Vec<String> = Vec::new();
-        {
-            let mut data_stream = BufReader::new(self.data_command(&cmd)?);
-            self.read_response_in(&[open_code, status::ALREADY_OPEN])?;
+        let data_stream = BufReader::new(self.data_command(&cmd)?);
+        self.read_response_in(&[open_code, status::ALREADY_OPEN])?;
+        let lines = Self::get_lines_from_stream(data_stream);
+        self.read_response_in(close_code)?;
+        lines
+    }
 
-            let mut line = String::new();
-            loop {
-                match data_stream.read_to_string(&mut line) {
-                    Ok(0) => break,
-                    Ok(_) => lines.extend(
-                        line.split("\r\n")
-                            .into_iter()
-                            .map(|s| String::from(s))
-                            .filter(|s| s.len() > 0),
-                    ),
-                    Err(err) => return Err(FtpError::ConnectionError(err)),
-                };
+    fn get_lines_from_stream(data_stream: BufReader<DataStream>) -> Result<Vec<String>> {
+        let mut lines: Vec<String> = Vec::new();
+
+        let mut lines_stream = data_stream.lines();
+        loop {
+            let line = lines_stream.next();
+            match line {
+                Some(line) => {
+                    match line {
+                        Ok(l) => {
+                            if l.is_empty() {
+                                continue;
+                            }
+                            lines.push(l);
+                        }
+                        Err(_) => return Err(FtpError::InvalidResponse(String::from("Invalid lines in response")))
+                    }
+                    
+                }
+                None => break Ok(lines),
             }
         }
-
-        self.read_response_in(close_code).map(|_| lines)
     }
 
     /// Execute `LIST` command which returns the detailed file listing in human readable format.
