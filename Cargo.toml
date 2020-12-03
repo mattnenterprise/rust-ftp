@@ -19,7 +19,7 @@ path = "src/lib.rs"
 
 [features]
 # Enable support of FTPS which requires openssl
-secure = ["openssl"]
+secure = ["native-tls"]
 
 # Add debug output (to STDOUT) of commands sent to the server
 # and lines read from the server
@@ -30,6 +30,6 @@ lazy_static = "1.4.0"
 regex = "1.4.2"
 chrono = "0.4.19"
 
-[dependencies.openssl]
-version = "^0.10"
+[dependencies.native-tls]
+version = "^0.2"
 optional = true

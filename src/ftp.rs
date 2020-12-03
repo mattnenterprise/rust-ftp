@@ -6,7 +6,7 @@ use super::types::{FileType, FtpError, Line, Result};
 use chrono::offset::TimeZone;
 use chrono::{DateTime, Utc};
 #[cfg(feature = "secure")]
-use openssl::ssl::{Ssl, SslContext};
+use native_tls::TlsConnector;
 use regex::Regex;
 use std::borrow::Cow;
 use std::io::{copy, BufRead, BufReader, BufWriter, Cursor, Read, Write};
@@ -32,7 +32,9 @@ lazy_static! {
 pub struct FtpStream {
     reader: BufReader<DataStream>,
     #[cfg(feature = "secure")]
-    ssl_cfg: Option<SslContext>,
+    tls_ctx: Option<TlsConnector>,
+    #[cfg(feature = "secure")]
+    domain: Option<String>,
 }
 
 impl FtpStream {
@@ -57,7 +59,8 @@ impl FtpStream {
             .and_then(|stream| {
                 let mut ftp_stream = FtpStream {
                     reader: BufReader::new(DataStream::Tcp(stream)),
-                    ssl_cfg: None,
+                    tls_ctx: None,
+                    domain: None,
                 };
                 ftp_stream.read_response(status::READY).map(|_| ftp_stream)
             })
@@ -75,26 +78,24 @@ impl FtpStream {
     /// ```rust,no_run
     /// use std::path::Path;
     /// use ftp::FtpStream;
-    /// use ftp::openssl::ssl::{ SslContext, SslMethod };
+    /// use ftp::native_tls::{TlsConnector, TlsStream};
     ///
-    /// // Create an SslContext with a custom cert.
-    /// let mut ctx = SslContext::builder(SslMethod::tls()).unwrap();
-    /// let _ = ctx.set_ca_file(Path::new("/path/to/a/cert.pem")).unwrap();
-    /// let ctx = ctx.build();
+    /// // Create a TlsConnector with a custom cert. 
+    /// // NOTE: For custom options see <https://docs.rs/native-tls/0.2.6/native_tls/struct.TlsConnectorBuilder.html>
+    /// let mut ctx = TlsConnector::new().unwrap();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
+    /// let mut ftp_stream = ftp_stream.into_secure("("localhost", ctx).unwrap();
     /// ```
     #[cfg(feature = "secure")]
-    pub fn into_secure(mut self, ssl_context: SslContext) -> Result<FtpStream> {
+    pub fn into_secure(mut self, tls_connector: TlsConnector, domain: &str) -> Result<FtpStream> {
         // Ask the server to start securing data.
         self.write_str("AUTH TLS\r\n")?;
         self.read_response(status::AUTH_OK)?;
-        let ssl_cfg = Ssl::new(&ssl_context).map_err(|e| FtpError::SecureError(format!("{}", e)))?;
-        let stream = ssl_cfg.connect(self.reader.into_inner().into_tcp_stream()).map_err(|e| FtpError::SecureError(format!("{}", e)))?;
-
+        let stream = tls_connector.connect(domain, self.reader.into_inner().into_tcp_stream()).map_err(|e| FtpError::SecureError(format!("{}", e)))?;
         let mut secured_ftp_tream = FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
-            ssl_cfg: Some(ssl_context),
+            tls_ctx: Some(tls_connector),
+            domain: Some(String::from(domain)),
         };
         // Set protection buffer size
         secured_ftp_tream.write_str("PBSZ 0\r\n")?;
@@ -114,7 +115,7 @@ impl FtpStream {
     /// use std::path::Path;
     /// use ftp::FtpStream;
     ///
-    /// use ftp::openssl::ssl::{ SslContext, SslMethod };
+    /// use ftp::native_tls::{TlsConnector, TlsStream};
     ///
     /// // Create an SslContext with a custom cert.
     /// let mut ctx = SslContext::builder(SslMethod::tls()).unwrap();
@@ -135,7 +136,8 @@ impl FtpStream {
         self.read_response(status::COMMAND_OK)?;
         let plain_ftp_stream = FtpStream {
             reader: BufReader::new(DataStream::Tcp(self.reader.into_inner().into_tcp_stream())),
-            ssl_cfg: None,
+            tls_ctx: None,
+            domain: None,
         };
         Ok(plain_ftp_stream)
     }
@@ -156,9 +158,9 @@ impl FtpStream {
             .and_then(|addr| self.write_str(cmd).map(|_| addr))
             .and_then(|addr| TcpStream::connect(addr).map_err(|e| FtpError::ConnectionError(e)))
             .and_then(|stream| {
-                match self.ssl_cfg {
-                    Some(ref ssl) => {
-                        Ssl::new(ssl).unwrap().connect(stream)
+                match self.tls_ctx {
+                    Some(ref tls_ctx) => {
+                        tls_ctx.connect(self.domain.as_ref().unwrap(), stream)
                             .map(|stream| DataStream::Ssl(stream))
                             .map_err(|e| FtpError::SecureError(format!("{}", e)))
                     },
