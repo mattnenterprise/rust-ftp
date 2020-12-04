@@ -379,6 +379,8 @@ impl FtpStream {
     /// Send PUT command and returns a BufWriter, which references the file created on the server
     /// The returned stream must be then correctly manipulated to write the content of the source file to the remote destination
     /// The stream must be then correctly dropped.
+    /// NOTE: Once you've finished the write, YOU MUST CALL THIS METHOD:
+    /// `stream.read_response_in(&[status::CLOSING_DATA_CONNECTION, status::REQUESTED_FILE_ACTION_OK])`
     pub fn put_with_stream(&mut self, filename: &str) -> Result<BufWriter<DataStream>> {
         let stor_command = format!("STOR {}\r\n", filename);
         let stream = BufWriter::new(self.data_command(&stor_command)?);
