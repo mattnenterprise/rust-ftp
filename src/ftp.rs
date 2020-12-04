@@ -31,6 +31,7 @@ lazy_static! {
 #[derive(Debug)]
 pub struct FtpStream {
     reader: BufReader<DataStream>,
+    welcome_msg: Option<String>,
     #[cfg(feature = "secure")]
     tls_ctx: Option<TlsConnector>,
     #[cfg(feature = "secure")]
@@ -46,8 +47,15 @@ impl FtpStream {
             .and_then(|stream| {
                 let mut ftp_stream = FtpStream {
                     reader: BufReader::new(DataStream::Tcp(stream)),
+                    welcome_msg: None,
                 };
-                ftp_stream.read_response(status::READY).map(|_| ftp_stream)
+                match ftp_stream.read_response(status::READY) {
+                    Ok(line) => {
+                        ftp_stream.welcome_msg = Some(line.1);
+                        Ok(ftp_stream)
+                    }
+                    Err(err) => Err(err),
+                }
             })
     }
 
@@ -59,10 +67,17 @@ impl FtpStream {
             .and_then(|stream| {
                 let mut ftp_stream = FtpStream {
                     reader: BufReader::new(DataStream::Tcp(stream)),
+                    welcome_msg: None,
                     tls_ctx: None,
                     domain: None,
                 };
-                ftp_stream.read_response(status::READY).map(|_| ftp_stream)
+                match ftp_stream.read_response(status::READY) {
+                    Ok(line) => {
+                        ftp_stream.welcome_msg = Some(line.1);
+                        Ok(ftp_stream)
+                    }
+                    Err(err) => Err(err),
+                }
             })
     }
 
@@ -98,6 +113,7 @@ impl FtpStream {
             reader: BufReader::new(DataStream::Ssl(stream)),
             tls_ctx: Some(tls_connector),
             domain: Some(String::from(domain)),
+            welcome_msg: self.welcome_msg.clone(),
         };
         // Set protection buffer size
         secured_ftp_tream.write_str("PBSZ 0\r\n")?;
@@ -140,8 +156,16 @@ impl FtpStream {
             reader: BufReader::new(DataStream::Tcp(self.reader.into_inner().into_tcp_stream())),
             tls_ctx: None,
             domain: None,
+            welcome_msg: self.welcome_msg.clone(),
         };
         Ok(plain_ftp_stream)
+    }
+
+    /// ### get_welcome_msg
+    ///
+    /// Returns welcome message retrieved from server (if available)
+    pub fn get_welcome_msg(&self) -> Option<String> {
+        self.welcome_msg.clone()
     }
 
     /// Execute command which send data back in a separate stream
@@ -566,6 +590,8 @@ impl FtpStream {
                 print!("FTP {}", line);
             }
         }
+
+        line = String::from(line.trim());
 
         if expected_code.into_iter().any(|ec| code == *ec) {
             Ok(Line(code, line))
