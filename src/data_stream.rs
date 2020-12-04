@@ -1,8 +1,7 @@
-use std::io::{Read, Write, Result};
-use std::net::TcpStream;
 #[cfg(feature = "secure")]
 use openssl::ssl::SslStream;
-
+use std::io::{Read, Result, Write};
+use std::net::TcpStream;
 
 /// Data Stream used for communications
 #[derive(Debug)]
@@ -26,7 +25,7 @@ impl DataStream {
     pub fn is_ssl(&self) -> bool {
         match self {
             &DataStream::Ssl(_) => true,
-            _ => false
+            _ => false,
         }
     }
 }
@@ -51,7 +50,6 @@ impl Read for DataStream {
         }
     }
 }
-
 
 impl Write for DataStream {
     fn write(&mut self, buf: &[u8]) -> Result<usize> {
