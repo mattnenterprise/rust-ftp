@@ -95,11 +95,11 @@ impl FtpStream {
     /// use ftp::FtpStream;
     /// use ftp::native_tls::{TlsConnector, TlsStream};
     ///
-    /// // Create a TlsConnector with a custom cert.
+    /// // Create a TlsConnector
     /// // NOTE: For custom options see <https://docs.rs/native-tls/0.2.6/native_tls/struct.TlsConnectorBuilder.html>
     /// let mut ctx = TlsConnector::new().unwrap();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// let mut ftp_stream = ftp_stream.into_secure("("localhost", ctx).unwrap();
+    /// let mut ftp_stream = ftp_stream.into_secure(ctx, "localhost").unwrap();
     /// ```
     #[cfg(feature = "secure")]
     pub fn into_secure(mut self, tls_connector: TlsConnector, domain: &str) -> Result<FtpStream> {
@@ -135,12 +135,10 @@ impl FtpStream {
     ///
     /// use ftp::native_tls::{TlsConnector, TlsStream};
     ///
-    /// // Create an SslContext with a custom cert.
-    /// let mut ctx = SslContext::builder(SslMethod::tls()).unwrap();
-    /// let _ = ctx.set_ca_file(Path::new("/path/to/a/cert.pem")).unwrap();
-    /// let ctx = ctx.build();
+    /// // Create an TlsConnector
+    /// let mut ctx = TlsConnector::new().unwrap();
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
+    /// let mut ftp_stream = ftp_stream.into_secure(ctx, "localhost").unwrap();
     /// // Do all secret things
     /// // Switch back to the insecure mode
     /// let mut ftp_stream = ftp_stream.into_insecure().unwrap();

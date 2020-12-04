@@ -30,12 +30,12 @@
 //!
 //! ```rust,no_run
 //! use ftp::FtpStream;
-//! use ftp::openssl::ssl::{ SslContext, SslMethod };
+//! use ftp::native_tls::{TlsConnector, TlsStream};
 //!
 //! let ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-//! let ctx = SslContext::builder(SslMethod::tls()).unwrap().build();
+//! let mut ctx = TlsConnector::new().unwrap();
 //! // Switch to the secure mode
-//! let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
+//! let mut ftp_stream = ftp_stream.into_secure(ctx, "localhost").unwrap();
 //! ftp_stream.login("anonymous", "anonymous").unwrap();
 //! // Do other secret stuff
 //! // Switch back to the insecure mode (if required)
