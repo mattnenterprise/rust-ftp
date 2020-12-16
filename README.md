@@ -1,5 +1,4 @@
-rust-ftp
-================
+# rust-ftp
 
 FTP client for Rust
 
@@ -11,15 +10,26 @@ FTP client for Rust
 
 [Documentation](https://docs.rs/ftp/)
 
+---
+
+- [rust-ftp](#rust-ftp)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [License](#license)
+    - [Contribution](#contribution)
+  - [Development environment](#development-environment)
+
 ## Installation
 
-FTPS support is disabled by default. To enable it `secure` should be activated in `Cargo.toml`.
+FTPS support is achieved through [rust-native-tls](https://github.com/sfackler/rust-native-tls) and is disabled by default. To enable it `secure` should be activated in `Cargo.toml`.
+
 ```toml
 [dependencies]
 ftp = { version = "<version>", features = ["secure"] }
 ```
 
 ## Usage
+
 ```rust
 extern crate ftp;
 
@@ -34,7 +44,7 @@ fn main() {
 
     // Get the current directory that the client will be reading from and writing to.
     println!("Current directory: {}", ftp_stream.pwd().unwrap());
-    
+
     // Change into a new directory, relative to the one we are currently in.
     let _ = ftp_stream.cwd("test_data").unwrap();
 
@@ -57,8 +67,8 @@ fn main() {
 
 Licensed under either of
 
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 
@@ -96,6 +106,7 @@ cargo test
 ```
 
 The following commands can be useful:
+
 ```bash
 # List running containers of ftp-server image
 # (to include stopped containers use -a option)
