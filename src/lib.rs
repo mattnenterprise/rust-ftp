@@ -9,7 +9,7 @@
 //!
 //! ```rust
 //! use ftp::FtpStream;
-//! let mut (ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap_or_else(|err|
+//! let (mut ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap_or_else(|err|
 //!     panic!("{}", err)
 //! );
 //! let _ = ftp_stream.quit();
@@ -28,43 +28,50 @@
 //! For better security it's the good practice to switch to the secure mode
 //! before authentication.
 //!
-//! ## FTPS Usage
-//!
-//! ```rust,no_run
-//! use ftp::FtpStream;
-//! use ftp::openssl::ssl::{ SslContext, SslMethod };
-//!
-//! let (ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
-//! let ctx = SslContext::builder(SslMethod::tls()).unwrap().build();
-//! // Switch to the secure mode
-//! let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
-//! ftp_stream.login("anonymous", "anonymous").unwrap();
-//! // Do other secret stuff
-//! // Switch back to the insecure mode (if required)
-//! let mut ftp_stream = ftp_stream.into_insecure().unwrap();
-//! // Do all public stuff
-//! let _ = ftp_stream.quit();
-//! ```
-//!
-//! ## FTPS Usage with native-tls
-//!
-//! ```rust,no_run
-//! use ftp::FtpStream;
-//! use ftp::native_tls::{TlsConnector, TlsStream};
-//!
-//! let (ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
-//! let mut ctx = TlsConnector::new().unwrap();
-//! // Switch to the secure mode
-//! let mut ftp_stream = ftp_stream.into_secure(ctx, "localhost").unwrap();
-//! ftp_stream.login("anonymous", "anonymous").unwrap();
-//! // Do other secret stuff
-//! // Switch back to the insecure mode (if required)
-//! let mut ftp_stream = ftp_stream.into_insecure().unwrap();
-//! // Do all public stuff
-//! let _ = ftp_stream.quit();
-//! ```
-//!
+#![cfg_attr(
+	all(feature = "secure", not(feature = "native-tls")),
+	doc = r##"
+## FTPS Usage
 
+```rust,no_run
+use ftp::FtpStream;
+use ftp::openssl::ssl::{ SslContext, SslMethod };
+
+let (ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+let ctx = SslContext::builder(SslMethod::tls()).unwrap().build();
+// Switch to the secure mode
+let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
+ftp_stream.login("anonymous", "anonymous").unwrap();
+// Do other secret stuff
+// Switch back to the insecure mode (if required)
+let mut ftp_stream = ftp_stream.into_insecure().unwrap();
+// Do all public stuff
+let _ = ftp_stream.quit();
+```
+"##
+)]
+#![cfg_attr(
+	all(feature = "secure", feature = "native-tls"),
+	doc = r##"
+## FTPS Usage
+
+```rust,no_run
+use ftp::FtpStream;
+use ftp::native_tls::{TlsConnector, TlsStream};
+
+let (ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+let mut ctx = TlsConnector::new().unwrap();
+// Switch to the secure mode
+let mut ftp_stream = ftp_stream.into_secure(ctx, "localhost").unwrap();
+ftp_stream.login("anonymous", "anonymous").unwrap();
+// Do other secret stuff
+// Switch back to the insecure mode (if required)
+let mut ftp_stream = ftp_stream.into_insecure().unwrap();
+// Do all public stuff
+let _ = ftp_stream.quit();
+```
+"##
+)]
 #[macro_use]
 extern crate lazy_static;
 extern crate chrono;

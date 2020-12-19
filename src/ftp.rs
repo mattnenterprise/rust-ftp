@@ -226,7 +226,7 @@ impl FtpStream {
     /// let mut ctx = SslContext::builder(SslMethod::tls()).unwrap();
     /// let _ = ctx.set_ca_file(Path::new("/path/to/a/cert.pem")).unwrap();
     /// let ctx = ctx.build();
-    /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// let (mut ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// // Do all secret things
     /// // Switch back to the insecure mode
@@ -301,7 +301,7 @@ impl FtpStream {
     /// use ftp::FtpStream;
     /// use std::time::Duration;
     ///
-    /// let stream = FtpStream::connect("127.0.0.1:21")
+    /// let (stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21")
     ///                        .expect("Couldn't connect to the server...");
     /// stream.get_ref().set_read_timeout(Some(Duration::from_secs(10)))
     ///                 .expect("set_read_timeout call failed");
@@ -432,7 +432,7 @@ impl FtpStream {
     /// ```
     /// # use ftp::{FtpStream, FtpError};
     /// # use std::io::Cursor;
-    /// # let mut conn = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// # let (mut conn, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
     /// # conn.login("Doe", "mumble").and_then(|_| {
     /// #     let mut reader = Cursor::new("hello, world!".as_bytes());
     /// #     conn.put("retr.txt", &mut reader)
@@ -469,7 +469,7 @@ impl FtpStream {
     /// ```
     /// # use ftp::{FtpStream, FtpError};
     /// # use std::io::Cursor;
-    /// # let mut conn = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// # let (mut conn, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
     /// # conn.login("Doe", "mumble").and_then(|_| {
     /// #     let mut reader = Cursor::new("hello, world!".as_bytes());
     /// #     conn.put("simple_retr.txt", &mut reader)
