@@ -29,8 +29,8 @@
 //! before authentication.
 //!
 #![cfg_attr(
-	all(feature = "secure", not(feature = "native-tls")),
-	doc = r##"
+    all(feature = "secure", not(feature = "native-tls")),
+    doc = r##"
 ## FTPS Usage
 
 ```rust,no_run
@@ -51,8 +51,8 @@ let _ = ftp_stream.quit();
 "##
 )]
 #![cfg_attr(
-	all(feature = "secure", feature = "native-tls"),
-	doc = r##"
+    all(feature = "secure", feature = "native-tls"),
+    doc = r##"
 ## FTPS Usage
 
 ```rust,no_run
