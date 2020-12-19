@@ -508,9 +508,16 @@ impl FtpStream {
         let stor_command = format!("STOR {}\r\n", filename);
         let mut data_stream = BufWriter::new(self.data_command(&stor_command)?);
         self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND])?;
-        copy(r, &mut data_stream)
-            .map_err(|read_err| FtpError::ConnectionError(read_err))
-            .map(|_| ())
+        copy(r, &mut data_stream)?;
+        #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+        {
+            if let DataStream::Ssl(mut ssl_stream) =
+                data_stream.into_inner().map_err(std::io::Error::from)?
+            {
+                ssl_stream.shutdown()?;
+            }
+        }
+        Ok(())
     }
 
     /// This stores a file on the server.
@@ -641,10 +648,10 @@ impl FtpStream {
             print!("CMD {}", command.as_ref());
         }
 
-        let stream = self.reader.get_mut();
-        stream
-            .write_all(command.as_ref().as_bytes())
-            .map_err(|send_err| FtpError::ConnectionError(send_err))
+        Ok(self
+            .reader
+            .get_mut()
+            .write_all(command.as_ref().as_bytes())?)
     }
 
     pub fn read_response(&mut self, expected_code: u32) -> crate::Result<Line> {
@@ -653,10 +660,8 @@ impl FtpStream {
 
     /// Retrieve single line response
     pub fn read_response_in(&mut self, expected_code: &[u32]) -> crate::Result<Line> {
-        let mut line = String::new();
-        self.reader
-            .read_line(&mut line)
-            .map_err(|read_err| FtpError::ConnectionError(read_err))?;
+        let mut line = String::with_capacity(5);
+        self.reader.read_line(&mut line)?;
 
         if cfg!(feature = "debug_print") {
             print!("FTP {}", line);

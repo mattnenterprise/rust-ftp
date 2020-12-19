@@ -36,6 +36,12 @@ impl From<openssl::error::ErrorStack> for FtpError {
     }
 }
 #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+impl From<openssl::ssl::Error> for FtpError {
+    fn from(err: openssl::ssl::Error) -> Self {
+        FtpError::SecureError(err.to_string())
+    }
+}
+#[cfg(all(feature = "secure", not(feature = "native-tls")))]
 impl<S: std::fmt::Debug> From<openssl::ssl::HandshakeError<S>> for FtpError {
     fn from(err: openssl::ssl::HandshakeError<S>) -> Self {
         FtpError::SecureError(err.to_string())
