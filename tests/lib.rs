@@ -6,8 +6,8 @@ use std::io::Cursor;
 
 #[test]
 fn test_ftp() {
-    let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
-    println!("Welcome message: {:?}", ftp_stream.get_welcome_msg());
+    let (mut ftp_stream, welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+    println!("Welcome message: {:?}", welcome_msg);
     let _ = ftp_stream.login("Doe", "mumble").unwrap();
 
     ftp_stream.mkdir("test_dir").unwrap();
