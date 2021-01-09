@@ -287,9 +287,27 @@ impl FtpStream {
     /// Also you will have to read the response to make sure it has the correct value.
     pub fn get(&mut self, file_name: &str) -> Result<BufReader<DataStream>> {
         let retr_command = format!("RETR {}\r\n", file_name);
-        let data_stream = BufReader::new(try!(self.data_command(&retr_command)));
-        self.read_response(status::ABOUT_TO_SEND)
-            .map(|_| data_stream)
+        let data_stream = BufReader::new(self.data_command(&retr_command)?);
+        self.read_response_in(&[status::ABOUT_TO_SEND, status::ALREADY_OPEN])?;
+        Ok(data_stream)
+    }
+
+    /// ### finalize_get
+    ///
+    /// Finalize get; must be called once the requested file, got previously with `get` has been read
+    pub fn finalize_get(&mut self, reader: Box<dyn Read>) -> Result<()> {
+        // Drop stream NOTE: must be done first, otherwise server won't return any response
+        drop(reader);
+        // Then read response
+        match self.read_response_in(&[
+            status::CLOSING_DATA_CONNECTION,
+            status::REQUESTED_FILE_ACTION_OK,
+        ]) {
+            Ok(_) => {
+                Ok(())
+            }
+            Err(err) => Err(err),
+        }
     }
 
     /// Renames the file from_name to to_name
@@ -422,14 +440,14 @@ impl FtpStream {
     /// This method must be called once the file has been written and
     /// `put_with_stream` has been used to write the file
     pub fn finalize_put_stream(&mut self, stream: Box<dyn Write>) -> Result<()> {
+        // Drop stream NOTE: must be done first, otherwise server won't return any response
+        drop(stream);
+        // Read response
         match self.read_response_in(&[
             status::CLOSING_DATA_CONNECTION,
             status::REQUESTED_FILE_ACTION_OK,
         ]) {
-            Ok(_) => {
-                drop(stream);
-                Ok(())
-            }
+            Ok(_) => Ok(()),
             Err(err) => Err(err),
         }
     }
