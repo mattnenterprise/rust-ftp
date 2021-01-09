@@ -1,5 +1,5 @@
 #[cfg(feature = "secure")]
-use openssl::ssl::SslStream;
+use native_tls::TlsStream;
 use std::io::{Read, Result, Write};
 use std::net::TcpStream;
 
@@ -8,7 +8,7 @@ use std::net::TcpStream;
 pub enum DataStream {
     Tcp(TcpStream),
     #[cfg(feature = "secure")]
-    Ssl(SslStream<TcpStream>),
+    Ssl(TlsStream<TcpStream>),
 }
 
 #[cfg(feature = "secure")]
