@@ -414,6 +414,22 @@ impl FtpStream {
         Ok(data_stream)
     }
 
+    /// ### finalize_get
+    ///
+    /// Finalize get; must be called once the requested file, got previously with `get` has been read
+    pub fn finalize_get(&mut self, reader: Box<dyn Read>) -> Result<()> {
+        // Drop stream NOTE: must be done first, otherwise server won't return any response
+        drop(reader);
+        // Then read response
+        match self.read_response_in(&[
+            status::CLOSING_DATA_CONNECTION,
+            status::REQUESTED_FILE_ACTION_OK,
+        ]) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err),
+        }
+    }
+
     /// Renames the file from_name to to_name
     pub fn rename(&mut self, from_name: &str, to_name: &str) -> crate::Result<()> {
         self.write_str(format!("RNFR {}\r\n", from_name))?;
@@ -504,22 +520,29 @@ impl FtpStream {
             .map(|_| ())
     }
 
-    fn put_file<R: Read>(&mut self, filename: &str, r: &mut R) -> crate::Result<()> {
-        let stor_command = format!("STOR {}\r\n", filename);
-        let mut data_stream = BufWriter::new(self.data_command(&stor_command)?);
-        self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND])?;
-        copy(r, &mut data_stream)?;
-        #[cfg(all(feature = "secure", not(feature = "native-tls")))]
-        {
-            if let DataStream::Ssl(mut ssl_stream) =
-                data_stream.into_inner().map_err(std::io::Error::from)?
-            {
-                ssl_stream.shutdown()?;
-            }
-        }
-        Ok(())
+    fn put_file<R: Read>(&mut self, filename: &str, r: &mut R) -> Result<()> {
+        // Get stream
+        let mut data_stream = self.put_with_stream(filename)?;
+        copy(r, &mut data_stream)
+            .map_err(|read_err| FtpError::ConnectionError(read_err))
+            .map(|_| ())
     }
 
+    /// ### put_with_stream
+    ///
+    /// Send PUT command and returns a BufWriter, which references the file created on the server
+    /// The returned stream must be then correctly manipulated to write the content of the source file to the remote destination
+    /// The stream must be then correctly dropped.
+    /// Once you've finished the write, YOU MUST CALL THIS METHOD: `finalize_put_stream`
+    pub fn put_with_stream(&mut self, filename: &str) -> Result<BufWriter<DataStream>> {
+        let stor_command = format!("STOR {}\r\n", filename);
+        let stream = BufWriter::new(self.data_command(&stor_command)?);
+        self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND])?;
+        Ok(stream)
+    }
+
+    /// ### put
+    ///
     /// This stores a file on the server.
     pub fn put<R: Read>(&mut self, filename: &str, r: &mut R) -> crate::Result<()> {
         self.put_file(filename, r)?;
@@ -528,6 +551,24 @@ impl FtpStream {
             status::REQUESTED_FILE_ACTION_OK,
         ])
         .map(|_| ())
+    }
+
+    /// ### finalize_put_stream
+    ///
+    /// Finalize put when using stream
+    /// This method must be called once the file has been written and
+    /// `put_with_stream` has been used to write the file
+    pub fn finalize_put_stream(&mut self, stream: Box<dyn Write>) -> Result<()> {
+        // Drop stream NOTE: must be done first, otherwise server won't return any response
+        drop(stream);
+        // Read response
+        match self.read_response_in(&[
+            status::CLOSING_DATA_CONNECTION,
+            status::REQUESTED_FILE_ACTION_OK,
+        ]) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err),
+        }
     }
 
     /// Execute a command which returns list of strings in a separate stream
