@@ -1,13 +1,20 @@
-#[cfg(feature = "secure")]
+#[cfg(all(feature = "secure", feature = "native-tls"))]
 use native_tls::TlsStream;
-use std::io::{Read, Result, Write};
-use std::net::TcpStream;
+#[cfg(all(feature = "secure", not(feature = "native-tls")))]
+use openssl::ssl::SslStream;
+
+use std::{
+    io::{Read, Result, Write},
+    net::TcpStream,
+};
 
 /// Data Stream used for communications
 #[derive(Debug)]
 pub enum DataStream {
     Tcp(TcpStream),
-    #[cfg(feature = "secure")]
+    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    Ssl(SslStream<TcpStream>),
+    #[cfg(all(feature = "secure", feature = "native-tls"))]
     Ssl(TlsStream<TcpStream>),
 }
 
