@@ -7,20 +7,12 @@ jobs:
     name: test
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - run: sudo apt-get update -qq &&
           sudo apt-get install -yqq vsftpd &&
           sudo useradd -s /bin/bash -d /home/ftp -m -c "Doe ftp user" -g ftp Doe &&
           echo "Doe:mumble" | sudo chpasswd &&
-          echo "
-            listen=yes\n
-            anon_root=/home/ftp\n
-            local_enable=yes
-            local_umask=022
-            pasv_enable=yes
-            pasv_min_port=65000
-            pasv_max_port=65010
-            write_enable=yes
-            log_ftp_protocol=yes" | sed -e "s/\s\+\(.*\)/\1/" | sudo tee /etc/vsftpd.conf &&
+          cat $GITHUB_WORKSPACE/tests/vsftpd.conf > /etc/vsftpd.conf &&
           cat /etc/vsftpd.conf &&
           sudo service vsftpd restart &&
           sudo service vsftpd status
