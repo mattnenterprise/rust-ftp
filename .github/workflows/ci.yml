@@ -20,6 +20,7 @@ jobs:
             pasv_max_port=65010
             write_enable=yes
             log_ftp_protocol=yes" | sed -e "s/\s\+\(.*\)/\1/" | sudo tee /etc/vsftpd.conf &&
+          echo /etc/vsftpd.conf &&
           sudo service vsftpd restart &&
           sudo service vsftpd status
       - uses: actions/checkout@v2
