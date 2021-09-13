@@ -12,8 +12,8 @@ jobs:
           sudo useradd -s /bin/bash -d /home/ftp -m -c "Doe ftp user" -g ftp Doe &&
           echo "Doe:mumble" | sudo chpasswd &&
           echo "
-            listen=yes
-            anon_root=/home/ftp
+            listen=yes\n
+            anon_root=/home/ftp\n
             local_enable=yes
             local_umask=022
             pasv_enable=yes
