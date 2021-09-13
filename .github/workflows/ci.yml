@@ -13,7 +13,7 @@ jobs:
           sudo useradd -s /bin/bash -d /home/ftp -m -c "Doe ftp user" -g ftp Doe &&
           echo "Doe:mumble" | sudo chpasswd &&
           sudo cat $GITHUB_WORKSPACE/tests/vsftpd.conf > /etc/vsftpd.conf &&
-          cat /etc/vsftpd.conf &&
+          sudo cat /etc/vsftpd.conf &&
           sudo service vsftpd restart &&
           sudo service vsftpd status
       - uses: actions/checkout@v2
