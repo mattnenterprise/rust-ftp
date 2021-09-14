@@ -5,8 +5,8 @@ FTP client for Rust
 [![Number of Crate Downloads](https://img.shields.io/crates/d/ftp.svg)](https://crates.io/crates/ftp)
 [![Crate Version](https://img.shields.io/crates/v/ftp.svg)](https://crates.io/crates/ftp)
 [![Crate License](https://img.shields.io/crates/l/ftp.svg)](https://crates.io/crates/ftp)
-[![Build Status](https://travis-ci.org/mattnenterprise/rust-ftp.svg)](https://travis-ci.org/mattnenterprise/rust-ftp)
-[![Coverage Status](https://coveralls.io/repos/github/mattnenterprise/rust-ftp/badge.svg?branch=master)](https://coveralls.io/github/mattnenterprise/rust-ftp?branch=master)
+[![Build Status](https://github.com/mattnenterprise/rust-ftp/actions/workflows/ci.yml/badge.svg?branch=4.0.0)](https://github.com/mattnenterprise/rust-ftp/actions)
+[![Coverage Status](https://codecov.io/gh/mattnenterprise/rust-ftp/branch/4.0.0/graph/badge.svg?token=tQUj3RyZxI)](https://codecov.io/gh/mattnenterprise/rust-ftp)
 
 [Documentation](https://docs.rs/ftp/)
 
