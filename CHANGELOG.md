@@ -48,10 +48,20 @@ Possible log types:
 - [added] Method `data_command` which issues `pasv` to open the new `DataStream`.
 - [added] Methods `secure` and `insecure` to switch between secure and insecure modes.
 
+## [2.0.0] - 2016-09-22
+## [1.0.0] - 2016-09-01
 
-### [v0.0.7] (2016-01-11)
 
-- No changelog up to this point
+## [0.0.8] - 2016-06-15
+### Added
+- FTPS support
+
+## [0.0.7] - 2016-01-11
+### Added
+- CHANGELOG.md
 
 [Unreleased]: https://github.com/coredump-ch/coredumpbot/compare/761deb8...HEAD
+[2.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/8538e5f...17ad10c
+[1.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/88a8dcd...8538e5f
+[0.0.8]: https://github.com/mattnenterprise/rust-ftp/compare/761deb8...88a8dcd
 [0.0.7]: https://github.com/mattnenterprise/rust-ftp/compare/ef996f0...761deb8
