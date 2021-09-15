@@ -8,14 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: sudo apt-get update -qq &&
-          sudo apt-get install -yqq vsftpd &&
-          sudo useradd -s /bin/bash -d /home/ftp -m -c "Doe ftp user" -g ftp Doe &&
-          echo "Doe:mumble" | sudo chpasswd &&
-          cat $GITHUB_WORKSPACE/tests/vsftpd.conf | sudo tee /etc/vsftpd.conf &&
-          cat /etc/vsftpd.conf &&
-          sudo service vsftpd restart &&
-          sudo service vsftpd status
+      - run: ./$GITHUB_WORKSPACE/.github/workflows/setup-vsftpd.sh
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -66,14 +59,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup VSFTPD 
-        run: sudo apt-get update -qq &&
-          sudo apt-get install -yqq vsftpd &&
-          sudo useradd -s /bin/bash -d /home/ftp -m -c "Doe ftp user" -g ftp Doe &&
-          echo "Doe:mumble" | sudo chpasswd &&
-          cat $GITHUB_WORKSPACE/tests/vsftpd.conf | sudo tee /etc/vsftpd.conf &&
-          cat /etc/vsftpd.conf &&
-          sudo service vsftpd restart &&
-          sudo service vsftpd status
+        run: ./$GITHUB_WORKSPACE/.github/workflows/setup-vsftpd.sh
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
