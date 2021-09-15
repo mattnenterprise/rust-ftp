@@ -48,6 +48,9 @@ Possible log types:
 - [added] Method `data_command` which issues `pasv` to open the new `DataStream`.
 - [added] Methods `secure` and `insecure` to switch between secure and insecure modes.
 
+## [2.1.1] - 2017-01-17
+## [2.0.1] - 2017-01-16
+
 ## [2.0.0] - 2016-09-22
 ## [1.0.0] - 2016-09-01
 
@@ -60,8 +63,14 @@ Possible log types:
 ### Added
 - CHANGELOG.md
 
-[Unreleased]: https://github.com/coredump-ch/coredumpbot/compare/761deb8...HEAD
-[2.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/8538e5f...17ad10c
-[1.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/88a8dcd...8538e5f
-[0.0.8]: https://github.com/mattnenterprise/rust-ftp/compare/761deb8...88a8dcd
-[0.0.7]: https://github.com/mattnenterprise/rust-ftp/compare/ef996f0...761deb8
+[Unreleased]: https://github.com/mattnenterprise/rust-ftp/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/mattnenterprise/rust-ftp/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/v2.1.2...v3.0.0
+[2.2.1]: Unknown - See Above
+[2.1.2]: https://github.com/mattnenterprise/rust-ftp/compare/v2.1.1...v2.1.2
+[2.1.1]: https://github.com/mattnenterprise/rust-ftp/compare/v2.0.1...v2.1.1
+[2.0.1]: https://github.com/mattnenterprise/rust-ftp/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/v1.0.0...v2.0.0
+[1.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/v0.0.8...v1.0.0
+[0.0.8]: https://github.com/mattnenterprise/rust-ftp/compare/v0.0.7...v0.0.8
+[0.0.7]: https://github.com/mattnenterprise/rust-ftp/compare/ef996f0...v0.0.7
