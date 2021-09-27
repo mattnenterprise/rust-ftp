@@ -4,8 +4,8 @@ All future notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-Due to the CHANGELOG file being neglected it has been updated to only reflect changes for version 3.0.0 and above.
-Git tags have still been added to reflect where the code is for each version. The only version missing is 2.2.1 which
+Due to the CHANGELOG file being neglected it has been updated to only reflect changes for versions 3.0.0 and above.
+Git tags have still been added to reflect the state of the code for each version. The only version missing is 2.2.1 which
 isn't in git history.
 
 ## [Unreleased]
@@ -25,11 +25,20 @@ isn't in git history.
 [Unreleased]: https://github.com/mattnenterprise/rust-ftp/compare/v3.0.1...HEAD
 [3.0.1]: https://github.com/mattnenterprise/rust-ftp/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/v2.1.2...v3.0.0
-[2.2.1]: Unknown - Couldn't find version reference in the codebase.
-[2.1.2]: https://github.com/mattnenterprise/rust-ftp/compare/v2.1.1...v2.1.2
-[2.1.1]: https://github.com/mattnenterprise/rust-ftp/compare/v2.0.1...v2.1.1
-[2.0.1]: https://github.com/mattnenterprise/rust-ftp/compare/v2.0.0...v2.0.1
-[2.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/v1.0.0...v2.0.0
-[1.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/v0.0.8...v1.0.0
-[0.0.8]: https://github.com/mattnenterprise/rust-ftp/compare/v0.0.7...v0.0.8
-[0.0.7]: https://github.com/mattnenterprise/rust-ftp/compare/ef996f0...v0.0.7
+
+## Previous Releases
+2.2.1: Unknown - Couldn't find version reference in the codebase.
+
+2.1.2: https://github.com/mattnenterprise/rust-ftp/compare/v2.1.1...v2.1.2
+
+2.1.1: https://github.com/mattnenterprise/rust-ftp/compare/v2.0.1...v2.1.1
+
+2.0.1: https://github.com/mattnenterprise/rust-ftp/compare/v2.0.0...v2.0.1
+
+2.0.0: https://github.com/mattnenterprise/rust-ftp/compare/v1.0.0...v2.0.0
+
+1.0.0: https://github.com/mattnenterprise/rust-ftp/compare/v0.0.8...v1.0.0
+
+0.0.8: https://github.com/mattnenterprise/rust-ftp/compare/v0.0.7...v0.0.8
+
+0.0.7: https://github.com/mattnenterprise/rust-ftp/compare/ef996f0...v0.0.7
