@@ -1,54 +1,44 @@
 # Changelog
 
-This project follows semantic versioning.
+All future notable changes to this project will be documented in this file.
 
-Possible log types:
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- `[added]` for new features.
-- `[changed]` for changes in existing functionality.
-- `[deprecated]` for once-stable features removed in upcoming releases.
-- `[removed]` for deprecated features removed in this release.
-- `[fixed]` for any bug fixes.
-- `[security]` to invite users to upgrade in case of vulnerabilities.
+Due to the CHANGELOG file being neglected it has been updated to only reflect changes for versions 3.0.0 and above.
+Git tags have still been added to reflect the state of the code for each version. The only version missing is 2.2.1 which
+isn't in git history.
 
+## [Unreleased]
+### Changed
+- CHANGELOG changed to start at 3.0.0. With past versions referenced with git tags except 2.2.1.
+- FTPS can now be done with [native-tls](https://crates.io/crates/native-tls) or [openssl](https://crates.io/crates/openssl) libraries. This creates better support for macOS and Windows. By default openssl is still used when just the `secure` flag is given. To use `native-tls` use the `secure` flag with the `native-tls` flag.
+- The `connect` function now returns the welcome message of the server.
 
-### [Unreleased]
+## [3.0.1] - 2018-04-15
+### Added
+- 200 as a proper response code for CDUP.
 
-- [changed] The `FTPStream` struct was renamed to `FtpStream` (#17)
-- [added] The `host` parameter for `FtpStream` now accepts any type that
-  implements `Into<String>` (#13)
-- [changed] FTP return code type changed from `isize` to `u32` (#18)
-- [changed] Type of port number returned by `pasv` changed from `isize`
-  to `u32` (#18)
-- [changed] Improved error handling (#21)
-- [added] Ability to rename files on the server
-- ...
+## [3.0.0] - 2018-02-28
 
-### [Unreleased from branch list_commands]
-- [changed] Separate main lib file and FTP stream implementation.
-- [changed] Regex is used to parse PASV response.
-- [added] The implementation of LIST command. See method `FtpStream::list`.
-- [added] The implementation of NLST command. See method `FtpStream::nlst`.
-- [added] The implementation of MDTM command. See method `FtpStream::mdtm`.
-- [added] The implementation of SIZE command. See method `FtpStream::size`.
+* Start of CHANGELOG
 
-### [Unreleased from branch retr_and_type]
-- [added] The implementation of RETR command. See method `FtpStream::retr`.
-- [added] The implementation of TYPE command. See method `FtpStream::transfer_type`.
+[Unreleased]: https://github.com/mattnenterprise/rust-ftp/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/mattnenterprise/rust-ftp/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/mattnenterprise/rust-ftp/compare/v2.1.2...v3.0.0
 
-### [Unreleased from branch ftps_support]
-- [added] Feature `secure` to enable FTPS support. Disabled be default.
-- [added] Feature `debug_print` to print command and responses to STDOUT. Disabled be default.
-- [added] DataStream which hides the underlying secure or insecure TCP stream.
-- [changed] Methods return `DataStream` instead of `TcpStream`.
-- [changed] Method `pasv` returns only IP and port and do not open new TCP stream.
-- [added] Method `data_command` which issues `pasv` to open the new `DataStream`.
-- [added] Methods `secure` and `insecure` to switch between secure and insecure modes.
+## Previous Releases
+2.2.1: Unknown - Couldn't find version reference in the codebase.
 
+2.1.2: https://github.com/mattnenterprise/rust-ftp/compare/v2.1.1...v2.1.2
 
-### [v0.0.7] (2016-01-11)
+2.1.1: https://github.com/mattnenterprise/rust-ftp/compare/v2.0.1...v2.1.1
 
-- No changelog up to this point
+2.0.1: https://github.com/mattnenterprise/rust-ftp/compare/v2.0.0...v2.0.1
 
-[Unreleased]: https://github.com/coredump-ch/coredumpbot/compare/761deb8...HEAD
-[0.0.7]: https://github.com/mattnenterprise/rust-ftp/compare/ef996f0...761deb8
+2.0.0: https://github.com/mattnenterprise/rust-ftp/compare/v1.0.0...v2.0.0
+
+1.0.0: https://github.com/mattnenterprise/rust-ftp/compare/v0.0.8...v1.0.0
+
+0.0.8: https://github.com/mattnenterprise/rust-ftp/compare/v0.0.7...v0.0.8
+
+0.0.7: https://github.com/mattnenterprise/rust-ftp/compare/ef996f0...v0.0.7
