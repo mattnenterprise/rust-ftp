@@ -21,11 +21,18 @@ FTP client for Rust
 
 ## Installation
 
-FTPS support is achieved through [rust-native-tls](https://github.com/sfackler/rust-native-tls) and is disabled by default. To enable it `secure` should be activated in `Cargo.toml`.
+FTPS support is achieved through [openssl](https://github.com/sfackler/rust-openssl) and is disabled by default. To enable it `secure` should be activated in `Cargo.toml`.
 
 ```toml
 [dependencies]
 ftp = { version = "<version>", features = ["secure"] }
+```
+
+FTPS support can also be added with [native-tls](https://github.com/sfackler/rust-native-tls). This library provides better support for macOS and Windows than openssl. To enable usage of native-tls put the following in `Cargo.toml`.
+
+```toml
+[dependencies]
+ftp = { version = "<version>", features = ["secure", "native-tls"] }
 ```
 
 ## Usage

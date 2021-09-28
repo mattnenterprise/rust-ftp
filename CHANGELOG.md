@@ -11,7 +11,7 @@ isn't in git history.
 ## [Unreleased]
 ### Changed
 - CHANGELOG changed to start at 3.0.0. With past versions referenced with git tags except 2.2.1.
-- FTPS can now be done with [native-tls](https://crates.io/crates/native-tls) or [openssl](https://crates.io/crates/openssl) libraries. This creates better support for OSX and Windows. By default openssl is still used when just the `secure` flag is given. To use `native-tls` use the `secure` flag with the `native-tls` flag.
+- FTPS can now be done with [native-tls](https://crates.io/crates/native-tls) or [openssl](https://crates.io/crates/openssl) libraries. This creates better support for macOS and Windows. By default openssl is still used when just the `secure` flag is given. To use `native-tls` use the `secure` flag with the `native-tls` flag.
 - The `connect` function now returns the welcome message of the server.
 
 ## [3.0.1] - 2018-04-15
