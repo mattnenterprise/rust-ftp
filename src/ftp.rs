@@ -367,10 +367,7 @@ impl FtpStream {
         let Line(_, line) = self.read_response(status::PASSIVE_MODE)?;
         PORT_RE
             .captures(&line)
-            .ok_or(FtpError::InvalidResponse(format!(
-                "Invalid PASV response: {}",
-                line
-            )))
+            .ok_or_else(|| FtpError::InvalidResponse(format!("Invalid PASV response: {}", line)))
             .and_then(|caps| {
                 // If the regex matches we can be sure groups contains numbers
                 let (oct1, oct2, oct3, oct4) = (
@@ -385,7 +382,7 @@ impl FtpStream {
                 );
                 let port = ((msb as u16) << 8) + lsb as u16;
                 let addr = format!("{}.{}.{}.{}:{}", oct1, oct2, oct3, oct4, port);
-                SocketAddr::from_str(&addr).map_err(|parse_err| FtpError::InvalidAddress(parse_err))
+                SocketAddr::from_str(&addr).map_err(FtpError::InvalidAddress)
             })
     }
 
@@ -485,9 +482,9 @@ impl FtpStream {
             reader
                 .read_to_end(&mut buffer)
                 .map(|_| buffer)
-                .map_err(|read_err| FtpError::ConnectionError(read_err))
+                .map_err(FtpError::ConnectionError)
         })
-        .map(|buffer| Cursor::new(buffer))
+        .map(Cursor::new)
     }
 
     /// Removes the remote pathname from the server.
@@ -693,7 +690,7 @@ impl FtpStream {
 
         line = String::from(line.trim());
 
-        if expected_code.into_iter().any(|ec| code == *ec) {
+        if expected_code.iter().any(|ec| code == *ec) {
             Ok(Line(code, line))
         } else {
             Err(FtpError::InvalidResponse(format!(

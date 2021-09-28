@@ -40,38 +40,38 @@ impl DataStream {
 impl DataStream {
     /// Returns a reference to the underlying TcpStream.
     pub fn get_ref(&self) -> &TcpStream {
-        match self {
-            &DataStream::Tcp(ref stream) => stream,
+        match *self {
+            DataStream::Tcp(ref stream) => stream,
             #[cfg(feature = "secure")]
-            &DataStream::Ssl(ref stream) => stream.get_ref(),
+            DataStream::Ssl(ref stream) => stream.get_ref(),
         }
     }
 }
 
 impl Read for DataStream {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        match self {
-            &mut DataStream::Tcp(ref mut stream) => stream.read(buf),
+        match *self {
+            DataStream::Tcp(ref mut stream) => stream.read(buf),
             #[cfg(feature = "secure")]
-            &mut DataStream::Ssl(ref mut stream) => stream.read(buf),
+            DataStream::Ssl(ref mut stream) => stream.read(buf),
         }
     }
 }
 
 impl Write for DataStream {
     fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        match self {
-            &mut DataStream::Tcp(ref mut stream) => stream.write(buf),
+        match *self {
+            DataStream::Tcp(ref mut stream) => stream.write(buf),
             #[cfg(feature = "secure")]
-            &mut DataStream::Ssl(ref mut stream) => stream.write(buf),
+            DataStream::Ssl(ref mut stream) => stream.write(buf),
         }
     }
 
     fn flush(&mut self) -> Result<()> {
-        match self {
-            &mut DataStream::Tcp(ref mut stream) => stream.flush(),
+        match *self {
+            DataStream::Tcp(ref mut stream) => stream.flush(),
             #[cfg(feature = "secure")]
-            &mut DataStream::Ssl(ref mut stream) => stream.flush(),
+            DataStream::Ssl(ref mut stream) => stream.flush(),
         }
     }
 }
