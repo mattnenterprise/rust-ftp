@@ -38,6 +38,7 @@ lazy_static! {
 #[derive(Debug)]
 pub struct FtpStream {
     reader: BufReader<DataStream>,
+    welcome_msg: Option<String>,
     #[cfg(all(feature = "secure", feature = "native-tls"))]
     tls_ctx: Option<TlsConnector>,
     #[cfg(all(feature = "secure", feature = "native-tls"))]
@@ -49,41 +50,68 @@ pub struct FtpStream {
 impl FtpStream {
     /// Creates an FTP Stream and returns the welcome message
     #[cfg(not(feature = "secure"))]
-    pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<(FtpStream, String)> {
-        let mut ftp_stream = FtpStream {
-            reader: BufReader::new(DataStream::Tcp(TcpStream::connect(addr)?)),
-        };
+    pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<FtpStream> {
+        TcpStream::connect(addr)
+            .map_err(FtpError::ConnectionError)
+            .and_then(|stream| {
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Tcp(stream)),
+                    welcome_msg: None,
+                };
 
-        let line = ftp_stream.read_response(status::READY)?;
-
-        Ok((ftp_stream, line.1))
+                match ftp_stream.read_response(status::READY) {
+                    Ok(response) => {
+                        ftp_stream.welcome_msg = Some(response.1);
+                        Ok(ftp_stream)
+                    }
+                    Err(err) => Err(err),
+                }
+            })
     }
 
     /// Creates an FTP Stream and returns the welcome message
     #[cfg(all(feature = "secure", feature = "native-tls"))]
-    pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<(FtpStream, String)> {
-        let mut ftp_stream = FtpStream {
-            reader: BufReader::new(DataStream::Tcp(TcpStream::connect(addr)?)),
-            tls_ctx: None,
-            domain: None,
-        };
+    pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<FtpStream> {
+        TcpStream::connect(addr)
+            .map_err(FtpError::ConnectionError)
+            .and_then(|stream| {
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Tcp(stream)),
+                    tls_ctx: None,
+                    domain: None,
+                    welcome_msg: None,
+                };
 
-        let line = ftp_stream.read_response(status::READY)?;
-
-        Ok((ftp_stream, line.1))
+                match ftp_stream.read_response(status::READY) {
+                    Ok(response) => {
+                        ftp_stream.welcome_msg = Some(response.1);
+                        Ok(ftp_stream)
+                    }
+                    Err(err) => Err(err),
+                }
+            })
     }
 
     /// Creates an FTP Stream and returns the welcome message
     #[cfg(all(feature = "secure", not(feature = "native-tls")))]
-    pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<(FtpStream, String)> {
-        let mut ftp_stream = FtpStream {
-            reader: BufReader::new(DataStream::Tcp(TcpStream::connect(addr)?)),
-            ssl_cfg: None,
-        };
+    pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<FtpStream> {
+        TcpStream::connect(addr)
+            .map_err(FtpError::ConnectionError)
+            .and_then(|stream| {
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Tcp(stream)),
+                    ssl_cfg: None,
+                    welcome_msg: None,
+                };
 
-        let line = ftp_stream.read_response(status::READY)?;
-
-        Ok((ftp_stream, line.1))
+                match ftp_stream.read_response(status::READY) {
+                    Ok(response) => {
+                        ftp_stream.welcome_msg = Some(response.1);
+                        Ok(ftp_stream)
+                    }
+                    Err(err) => Err(err),
+                }
+            })
     }
 
     /// Switch to a secure mode if possible, using a provided SSL configuration.
@@ -185,7 +213,7 @@ impl FtpStream {
     /// let mut ctx = SslContext::builder(SslMethod::tls()).unwrap();
     /// let _ = ctx.set_ca_file(Path::new("/path/to/a/cert.pem")).unwrap();
     /// let ctx = ctx.build();
-    /// let (mut ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// ```
     #[cfg(all(feature = "secure", not(feature = "native-tls")))]
@@ -201,6 +229,7 @@ impl FtpStream {
                     .map_err(|e| FtpError::SecureError(e.to_string()))?,
             )),
             ssl_cfg: Some(ssl_context),
+            welcome_msg: self.welcome_msg,
         };
         // Set protection buffer size
         secured_ftp_tream.write_str("PBSZ 0\r\n")?;
@@ -226,7 +255,7 @@ impl FtpStream {
     /// let mut ctx = SslContext::builder(SslMethod::tls()).unwrap();
     /// let _ = ctx.set_ca_file(Path::new("/path/to/a/cert.pem")).unwrap();
     /// let ctx = ctx.build();
-    /// let (mut ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// // Do all secret things
     /// // Switch back to the insecure mode
@@ -243,6 +272,7 @@ impl FtpStream {
         let plain_ftp_stream = FtpStream {
             reader: BufReader::new(DataStream::Tcp(self.reader.into_inner().into_tcp_stream())),
             ssl_cfg: None,
+            welcome_msg: self.welcome_msg,
         };
 
         Ok(plain_ftp_stream)
@@ -301,13 +331,18 @@ impl FtpStream {
     /// use ftp::FtpStream;
     /// use std::time::Duration;
     ///
-    /// let (stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21")
+    /// let stream = FtpStream::connect("127.0.0.1:21")
     ///                        .expect("Couldn't connect to the server...");
     /// stream.get_ref().set_read_timeout(Some(Duration::from_secs(10)))
     ///                 .expect("set_read_timeout call failed");
     /// ```
     pub fn get_ref(&self) -> &TcpStream {
         self.reader.get_ref().get_ref()
+    }
+
+    /// Get welcome message from the server on connect.
+    pub fn get_welcome_msg(&self) -> Option<&str> {
+        self.welcome_msg.as_deref()
     }
 
     /// Log in to the FTP server.
@@ -429,7 +464,7 @@ impl FtpStream {
     /// ```
     /// # use ftp::{FtpStream, FtpError};
     /// # use std::io::Cursor;
-    /// # let (mut conn, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// # let mut conn = FtpStream::connect("127.0.0.1:21").unwrap();
     /// # conn.login("Doe", "mumble").and_then(|_| {
     /// #     let mut reader = Cursor::new("hello, world!".as_bytes());
     /// #     conn.put("retr.txt", &mut reader)
@@ -466,7 +501,7 @@ impl FtpStream {
     /// ```
     /// # use ftp::{FtpStream, FtpError};
     /// # use std::io::Cursor;
-    /// # let (mut conn, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// # let mut conn = FtpStream::connect("127.0.0.1:21").unwrap();
     /// # conn.login("Doe", "mumble").and_then(|_| {
     /// #     let mut reader = Cursor::new("hello, world!".as_bytes());
     /// #     conn.put("simple_retr.txt", &mut reader)

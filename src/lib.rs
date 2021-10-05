@@ -9,7 +9,7 @@
 //!
 //! ```rust
 //! use ftp::FtpStream;
-//! let (mut ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap_or_else(|err|
+//! let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap_or_else(|err|
 //!     panic!("{}", err)
 //! );
 //! let _ = ftp_stream.quit();
@@ -37,7 +37,7 @@
 use ftp::FtpStream;
 use ftp::openssl::ssl::{ SslContext, SslMethod };
 
-let (ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+let ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
 let ctx = SslContext::builder(SslMethod::tls()).unwrap().build();
 // Switch to the secure mode
 let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
