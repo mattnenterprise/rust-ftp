@@ -17,7 +17,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features secure
+          args: --features secure,integration-test
 
   fmt:
     name: fmt
@@ -71,7 +71,7 @@ jobs:
         uses: actions-rs/tarpaulin@v0.1
         with:
           version: '0.15.0'
-          args: '--features secure -- --test-threads 1'
+          args: '--features secure,integration-test -- --test-threads 1'
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1.0.2
