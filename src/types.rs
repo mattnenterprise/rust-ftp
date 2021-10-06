@@ -4,21 +4,21 @@ use std::convert::From;
 use std::fmt;
 
 /// A shorthand for a Result whose error type is always an FtpError.
-pub type Result<T> = ::std::result::Result<T, FtpError>;
+pub type Result<T> = std::result::Result<T, FtpError>;
 
 /// `FtpError` is a library-global error type to describe the different kinds of
 /// errors that might occur while using FTP.
 #[derive(Debug)]
 pub enum FtpError {
-    ConnectionError(::std::io::Error),
+    ConnectionError(std::io::Error),
     #[cfg(feature = "secure")]
     SecureError(String),
     InvalidResponse(String),
-    InvalidAddress(::std::net::AddrParseError),
+    InvalidAddress(std::net::AddrParseError),
 }
 
-impl From<::std::io::Error> for FtpError {
-    fn from(err: ::std::io::Error) -> Self {
+impl From<std::io::Error> for FtpError {
+    fn from(err: std::io::Error) -> Self {
         FtpError::ConnectionError(err)
     }
 }
@@ -48,8 +48,8 @@ impl<S: std::fmt::Debug> From<openssl::ssl::HandshakeError<S>> for FtpError {
     }
 }
 
-impl From<::std::net::AddrParseError> for FtpError {
-    fn from(err: ::std::net::AddrParseError) -> Self {
+impl From<std::net::AddrParseError> for FtpError {
+    fn from(err: std::net::AddrParseError) -> Self {
         FtpError::InvalidAddress(err)
     }
 }
@@ -142,6 +142,23 @@ impl std::error::Error for FtpError {
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn error_str() {
+        assert_eq!(
+            FtpError::ConnectionError(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "timed out"
+            ))
+            .to_string(),
+            "FTP ConnectionError: timed out"
+        );
+
+        assert_eq!(
+            FtpError::InvalidResponse("500 Bad Command".to_owned()).to_string(),
+            "FTP InvalidResponse: 500 Bad Command"
+        );
+    }
 
     #[test]
     fn format_control_str() {
