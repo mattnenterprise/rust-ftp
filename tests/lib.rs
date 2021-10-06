@@ -1,10 +1,27 @@
 #[cfg(test)]
 extern crate ftp;
 
+#[cfg(feature = "integration-test")]
 use ftp::FtpStream;
+#[cfg(feature = "integration-test")]
 use std::io::Cursor;
 
 #[test]
+#[cfg(feature = "integration-test")]
+fn get_welcome_msg() {
+    let ftp_stream = setup_stream();
+    assert_eq!(ftp_stream.get_welcome_msg(), Some("220 (vsFTPd 3.0.3)"));
+}
+
+#[test]
+#[cfg(feature = "integration-test")]
+fn noop() {
+    let mut ftp_stream = setup_stream();
+    assert!(ftp_stream.noop().is_ok());
+}
+
+#[test]
+#[cfg(feature = "integration-test")]
 fn test_ftp() {
     let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
 
@@ -36,4 +53,11 @@ fn test_ftp() {
         .and_then(|_| ftp_stream.rmdir("test_dir"))
         .and_then(|_| ftp_stream.quit())
         .is_ok());
+}
+
+#[cfg(feature = "integration-test")]
+fn setup_stream() -> FtpStream {
+    let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
+    assert!(ftp_stream.login("Doe", "mumble").is_ok());
+    ftp_stream
 }

@@ -61,6 +61,8 @@ impl FtpStream {
 
                 match ftp_stream.read_response(status::READY) {
                     Ok(response) => {
+                        println!("{:?}", response.0);
+                        println!("{:?}", response.1);
                         ftp_stream.welcome_msg = Some(response.1);
                         Ok(ftp_stream)
                     }
