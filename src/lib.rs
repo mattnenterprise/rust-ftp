@@ -29,7 +29,7 @@
 //! before authentication.
 //!
 #![cfg_attr(
-    all(feature = "secure", not(feature = "native-tls")),
+    feature = "secure",
     doc = r##"
 ## FTPS Usage
 
@@ -51,7 +51,7 @@ let _ = ftp_stream.quit();
 "##
 )]
 #![cfg_attr(
-    all(feature = "secure", feature = "native-tls"),
+    feature = "native-tls",
     doc = r##"
 ## FTPS Usage
 
@@ -59,7 +59,7 @@ let _ = ftp_stream.quit();
 use ftp::FtpStream;
 use ftp::native_tls::{TlsConnector, TlsStream};
 
-let (ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+let ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
 let mut ctx = TlsConnector::new().unwrap();
 // Switch to the secure mode
 let mut ftp_stream = ftp_stream.into_secure(ctx, "localhost").unwrap();
@@ -72,14 +72,18 @@ let _ = ftp_stream.quit();
 ```
 "##
 )]
+
+#[cfg(all(feature = "secure", feature = "native-tls"))]
+compile_error!("feature \"secure\" and feature \"native-tls\" cannot be enabled at the same time");
+
 #[macro_use]
 extern crate lazy_static;
 extern crate chrono;
 extern crate regex;
 
-#[cfg(all(feature = "secure", feature = "native-tls"))]
+#[cfg(feature = "native-tls")]
 pub extern crate native_tls;
-#[cfg(all(feature = "secure", not(feature = "native-tls")))]
+#[cfg(feature = "secure")]
 pub extern crate openssl;
 
 mod data_stream;

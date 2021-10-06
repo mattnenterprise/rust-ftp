@@ -17,9 +17,9 @@ use {
     },
 };
 
-#[cfg(all(feature = "secure", feature = "native-tls"))]
+#[cfg(feature = "native-tls")]
 use native_tls::TlsConnector;
-#[cfg(all(feature = "secure", not(feature = "native-tls")))]
+#[cfg(feature = "secure")]
 use openssl::ssl::{Ssl, SslContext};
 
 lazy_static! {
@@ -39,17 +39,17 @@ lazy_static! {
 pub struct FtpStream {
     reader: BufReader<DataStream>,
     welcome_msg: Option<String>,
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     tls_ctx: Option<TlsConnector>,
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     domain: Option<String>,
-    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    #[cfg(feature = "secure")]
     ssl_cfg: Option<SslContext>,
 }
 
 impl FtpStream {
     /// Creates an FTP Stream and returns the welcome message
-    #[cfg(not(feature = "secure"))]
+    #[cfg(not(any(feature = "secure", feature = "native-tls")))]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<FtpStream> {
         TcpStream::connect(addr)
             .map_err(FtpError::ConnectionError)
@@ -70,7 +70,7 @@ impl FtpStream {
     }
 
     /// Creates an FTP Stream and returns the welcome message
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<FtpStream> {
         TcpStream::connect(addr)
             .map_err(FtpError::ConnectionError)
@@ -93,7 +93,7 @@ impl FtpStream {
     }
 
     /// Creates an FTP Stream and returns the welcome message
-    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    #[cfg(feature = "secure")]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<FtpStream> {
         TcpStream::connect(addr)
             .map_err(FtpError::ConnectionError)
@@ -131,10 +131,10 @@ impl FtpStream {
     /// // Create a TlsConnector
     /// // NOTE: For custom options see <https://docs.rs/native-tls/0.2.6/native_tls/struct.TlsConnectorBuilder.html>
     /// let mut ctx = TlsConnector::new().unwrap();
-    /// let mut (ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx, "localhost").unwrap();
     /// ```
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     pub fn into_secure(
         mut self,
         tls_connector: TlsConnector,
@@ -150,6 +150,7 @@ impl FtpStream {
             )),
             tls_ctx: Some(tls_connector),
             domain: Some(String::from(domain)),
+            welcome_msg: self.welcome_msg,
         };
         // Set protection buffer size
         secured_ftp_tream.write_str("PBSZ 0\r\n")?;
@@ -174,7 +175,7 @@ impl FtpStream {
     ///
     /// // Create an TlsConnector
     /// let mut ctx = TlsConnector::new().unwrap();
-    /// let mut (ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
+    /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx, "localhost").unwrap();
     /// // Do all secret things
     /// // Switch back to the insecure mode
@@ -182,7 +183,7 @@ impl FtpStream {
     /// // Do all public things
     /// let _ = ftp_stream.quit();
     /// ```
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     pub fn into_insecure(mut self) -> crate::Result<FtpStream> {
         // Ask the server to stop securing data
         self.write_str("CCC\r\n")?;
@@ -191,6 +192,7 @@ impl FtpStream {
             reader: BufReader::new(DataStream::Tcp(self.reader.into_inner().into_tcp_stream())),
             tls_ctx: None,
             domain: None,
+            welcome_msg: self.welcome_msg,
         };
         Ok(plain_ftp_stream)
     }
@@ -216,7 +218,7 @@ impl FtpStream {
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// ```
-    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    #[cfg(feature = "secure")]
     pub fn into_secure(mut self, ssl_context: SslContext) -> crate::Result<FtpStream> {
         // Ask the server to start securing data.
         self.write_str("AUTH TLS\r\n")?;
@@ -263,7 +265,7 @@ impl FtpStream {
     /// // Do all public things
     /// let _ = ftp_stream.quit();
     /// ```
-    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    #[cfg(feature = "secure")]
     pub fn into_insecure(mut self) -> crate::Result<FtpStream> {
         // Ask the server to stop securing data
         self.write_str("CCC\r\n")?;
@@ -279,7 +281,7 @@ impl FtpStream {
     }
 
     /// Execute command which send data back in a separate stream
-    #[cfg(not(feature = "secure"))]
+    #[cfg(not(any(feature = "secure", feature = "native-tls")))]
     fn data_command(&mut self, cmd: &str) -> crate::Result<DataStream> {
         let addr = self.pasv()?;
         self.write_str(cmd)?;
@@ -287,7 +289,7 @@ impl FtpStream {
     }
 
     /// Execute command which send data back in a separate stream
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     fn data_command(&mut self, cmd: &str) -> crate::Result<DataStream> {
         let addr = self.pasv()?;
         self.write_str(cmd)?;
@@ -302,7 +304,7 @@ impl FtpStream {
     }
 
     /// Execute command which send data back in a separate stream
-    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    #[cfg(feature = "secure")]
     fn data_command(&mut self, cmd: &str) -> crate::Result<DataStream> {
         let addr = self.pasv()?;
         self.write_str(cmd)?;
@@ -541,7 +543,7 @@ impl FtpStream {
         let mut data_stream = BufWriter::new(self.data_command(&stor_command)?);
         self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND])?;
         copy(r, &mut data_stream)?;
-        #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+        #[cfg(feature = "secure")]
         {
             if let DataStream::Ssl(mut ssl_stream) =
                 data_stream.into_inner().map_err(std::io::Error::from)?
