@@ -435,6 +435,13 @@ impl FtpStream {
         self.read_response(status::CLOSING).map(|_| ())
     }
 
+    /// Sets the byte from which the transfer is to be restarted.
+    pub fn restart_from(&mut self, offset: u64) -> crate::Result<()> {
+        let rest_command = format!("REST {}\r\n", offset.to_string());
+        self.write_str(&rest_command)?;
+        self.read_response(status::REQUEST_FILE_PENDING).map(|_| ())
+    }
+
     /// Retrieves the file name specified from the server.
     /// This method is a more complicated way to retrieve a file.
     /// The reader returned should be dropped.
