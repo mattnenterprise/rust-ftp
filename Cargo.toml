@@ -30,5 +30,6 @@ openssl = { version = "0.10", optional = true }
 native-tls = { version = "0.2", optional = true }
 
 
+
 [package.metadata.docs.rs]
 rustc-args = ["--cfg", "openssl"]

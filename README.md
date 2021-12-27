@@ -28,6 +28,13 @@ FTPS support is achieved through [rust-native-tls](https://github.com/sfackler/r
 ftp = { version = "<version>", features = ["openssl"] }
 ```
 
+rust-ftp also supports native-tls
+
+```toml
+[dependencies]
+ftp = { version = "<version>", features = ["native-tls"] }
+```
+
 ## Usage
 
 ```rust
