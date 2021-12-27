@@ -28,8 +28,7 @@
 //! For better security it's the good practice to switch to the secure mode
 //! before authentication.
 //!
-#![cfg_attr(
-    all(feature = "secure", not(feature = "native-tls")),
+#![cfg_attr(feature = "openssl",
     doc = r##"
 ## FTPS Usage
 
@@ -50,8 +49,7 @@ let _ = ftp_stream.quit();
 ```
 "##
 )]
-#![cfg_attr(
-    all(feature = "secure", feature = "native-tls"),
+#![cfg_attr(feature = "native-ssl",
     doc = r##"
 ## FTPS Usage
 
@@ -77,9 +75,9 @@ extern crate lazy_static;
 extern crate chrono;
 extern crate regex;
 
-#[cfg(all(feature = "secure", feature = "native-tls"))]
+#[cfg(feature = "native-tls")]
 pub extern crate native_tls;
-#[cfg(all(feature = "secure", not(feature = "native-tls")))]
+#[cfg(feature = "openssl")]
 pub extern crate openssl;
 
 mod data_stream;
