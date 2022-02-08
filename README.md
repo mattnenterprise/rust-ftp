@@ -2,19 +2,6 @@
 
 FTP client for Rust
 
-**THIS IS A FORK**: This fork will fix the following error: 
-```
-error: failed to run custom build command for `openssl v0.9.24`
-
-Caused by:
-  process didn't exit successfully: `/Users/jonaseveraert/Documents/Documenten/KSA/website/html/ftp_conn/target/debug/build/openssl-a27d536a59118df4/build-script-build` (exit status: 101)
-  --- stderr
-  thread 'main' panicked at 'Unable to detect OpenSSL version', /Users/jonaseveraert/.cargo/registry/src/github.com-1ecc6299db9ec823/openssl-0.9.24/build.rs:16:14
-  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-warning: build failed, waiting for other jobs to finish...
-error: build failed
-```
-
 [![Number of Crate Downloads](https://img.shields.io/crates/d/ftp.svg)](https://crates.io/crates/ftp)
 [![Crate Version](https://img.shields.io/crates/v/ftp.svg)](https://crates.io/crates/ftp)
 [![Crate License](https://img.shields.io/crates/l/ftp.svg)](https://crates.io/crates/ftp)
