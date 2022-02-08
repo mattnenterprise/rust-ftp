@@ -20,6 +20,7 @@ path = "src/lib.rs"
 [features]
 # Enable support of FTPS which requires openssl
 secure = ["openssl"]
+vendored = ["openssl/vendored"]
 
 # Add debug output (to STDOUT) of commands sent to the server
 # and lines read from the server
