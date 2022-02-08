@@ -29,7 +29,7 @@ debug_print = []
 lazy_static = "1"
 regex = "1"
 chrono = "0.4"
-openssl = { version = "0.10", optional = true }
+openssl = { version = "0.10", optional = true, features = ["vendored"] }
 
 [dependencies.native-tls]
 version = "0.2"
