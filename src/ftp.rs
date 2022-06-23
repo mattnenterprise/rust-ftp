@@ -7,7 +7,6 @@ use super::{
 };
 
 use {
-    chrono::{offset::TimeZone, DateTime, Utc},
     regex::Regex,
     std::{
         borrow::Cow,
@@ -17,9 +16,9 @@ use {
     },
 };
 
-#[cfg(all(feature = "secure", feature = "native-tls"))]
+#[cfg(feature = "native-tls")]
 use native_tls::TlsConnector;
-#[cfg(all(feature = "secure", not(feature = "native-tls")))]
+#[cfg(feature = "openssl")]
 use openssl::ssl::{Ssl, SslContext};
 
 lazy_static! {
@@ -39,17 +38,51 @@ lazy_static! {
 pub struct FtpStream {
     reader: BufReader<DataStream>,
     welcome_msg: Option<String>,
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     tls_ctx: Option<TlsConnector>,
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     domain: Option<String>,
-    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    #[cfg(feature = "openssl")]
     ssl_cfg: Option<SslContext>,
+}
+
+pub struct DateTime {
+    pub year: u32,
+    pub month: u32,
+    pub day: u32,
+    pub hour: u32,
+    pub minute: u32,
+    pub second: u32,
+}
+impl DateTime {
+    pub fn timestamp(&self) -> u32 {
+        let days_asof_m = [31_u16, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
+        let yyear = self.year - 1;
+        let countleap = ((yyear / 4) - (yyear / 100) + (yyear / 400))
+            - ((1970 / 4) - (1970 / 100) + (1970 / 400));
+
+        let m = if self.month > 1 {
+            let days_per_month = ((self.year % 4 == 0
+                && ((self.year % 100 != 0) || self.year % 400 == 0))
+                && self.month > 2
+                || self.month == 2 && self.day >= 29) as u16;
+            (days_asof_m[(self.month - 2) as usize] + days_per_month) as u32 * 86400
+        } else {
+            0
+        };
+        (self.year - 1970) * 365 * 86400
+            + (countleap * 86400)
+            + self.second
+            + (self.hour * 3600)
+            + (self.minute * 60)
+            + ((self.day - 1) * 86400)
+            + m
+    }
 }
 
 impl FtpStream {
     /// Creates an FTP Stream and returns the welcome message
-    #[cfg(not(feature = "secure"))]
+    #[cfg(not(any(feature = "openssl", feature = "native-tls")))]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<FtpStream> {
         TcpStream::connect(addr)
             .map_err(FtpError::ConnectionError)
@@ -70,7 +103,7 @@ impl FtpStream {
     }
 
     /// Creates an FTP Stream and returns the welcome message
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<FtpStream> {
         TcpStream::connect(addr)
             .map_err(FtpError::ConnectionError)
@@ -93,7 +126,7 @@ impl FtpStream {
     }
 
     /// Creates an FTP Stream and returns the welcome message
-    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    #[cfg(feature = "openssl")]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<FtpStream> {
         TcpStream::connect(addr)
             .map_err(FtpError::ConnectionError)
@@ -134,7 +167,7 @@ impl FtpStream {
     /// let mut (ftp_stream, _welcome_msg) = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx, "localhost").unwrap();
     /// ```
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     pub fn into_secure(
         mut self,
         tls_connector: TlsConnector,
@@ -150,6 +183,7 @@ impl FtpStream {
             )),
             tls_ctx: Some(tls_connector),
             domain: Some(String::from(domain)),
+            welcome_msg: self.welcome_msg,
         };
         // Set protection buffer size
         secured_ftp_tream.write_str("PBSZ 0\r\n")?;
@@ -182,7 +216,7 @@ impl FtpStream {
     /// // Do all public things
     /// let _ = ftp_stream.quit();
     /// ```
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     pub fn into_insecure(mut self) -> crate::Result<FtpStream> {
         // Ask the server to stop securing data
         self.write_str("CCC\r\n")?;
@@ -191,6 +225,7 @@ impl FtpStream {
             reader: BufReader::new(DataStream::Tcp(self.reader.into_inner().into_tcp_stream())),
             tls_ctx: None,
             domain: None,
+            welcome_msg: self.welcome_msg,
         };
         Ok(plain_ftp_stream)
     }
@@ -216,7 +251,7 @@ impl FtpStream {
     /// let mut ftp_stream = FtpStream::connect("127.0.0.1:21").unwrap();
     /// let mut ftp_stream = ftp_stream.into_secure(ctx).unwrap();
     /// ```
-    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    #[cfg(feature = "openssl")]
     pub fn into_secure(mut self, ssl_context: SslContext) -> crate::Result<FtpStream> {
         // Ask the server to start securing data.
         self.write_str("AUTH TLS\r\n")?;
@@ -263,7 +298,7 @@ impl FtpStream {
     /// // Do all public things
     /// let _ = ftp_stream.quit();
     /// ```
-    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    #[cfg(feature = "openssl")]
     pub fn into_insecure(mut self) -> crate::Result<FtpStream> {
         // Ask the server to stop securing data
         self.write_str("CCC\r\n")?;
@@ -279,7 +314,7 @@ impl FtpStream {
     }
 
     /// Execute command which send data back in a separate stream
-    #[cfg(not(feature = "secure"))]
+    #[cfg(not(any(feature = "openssl", feature = "native-tls")))]
     fn data_command(&mut self, cmd: &str) -> crate::Result<DataStream> {
         let addr = self.pasv()?;
         self.write_str(cmd)?;
@@ -287,7 +322,7 @@ impl FtpStream {
     }
 
     /// Execute command which send data back in a separate stream
-    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    #[cfg(feature = "native-tls")]
     fn data_command(&mut self, cmd: &str) -> crate::Result<DataStream> {
         let addr = self.pasv()?;
         self.write_str(cmd)?;
@@ -302,7 +337,7 @@ impl FtpStream {
     }
 
     /// Execute command which send data back in a separate stream
-    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    #[cfg(feature = "openssl")]
     fn data_command(&mut self, cmd: &str) -> crate::Result<DataStream> {
         let addr = self.pasv()?;
         self.write_str(cmd)?;
@@ -541,7 +576,7 @@ impl FtpStream {
         let mut data_stream = BufWriter::new(self.data_command(&stor_command)?);
         self.read_response_in(&[status::ALREADY_OPEN, status::ABOUT_TO_SEND])?;
         copy(r, &mut data_stream)?;
-        #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+        #[cfg(feature = "openssl")]
         {
             if let DataStream::Ssl(mut ssl_stream) =
                 data_stream.into_inner().map_err(std::io::Error::from)?
@@ -639,14 +674,14 @@ impl FtpStream {
 
     /// Retrieves the modification time of the file at `pathname` if it exists.
     /// In case the file does not exist `None` is returned.
-    pub fn mdtm(&mut self, pathname: &str) -> crate::Result<Option<DateTime<Utc>>> {
+    pub fn mdtm(&mut self, pathname: &str) -> crate::Result<Option<DateTime>> {
         self.write_str(format!("MDTM {}\r\n", pathname))?;
         let Line(_, content) = self.read_response(status::FILE)?;
 
         match MDTM_RE.captures(&content) {
             Some(caps) => {
                 let (year, month, day) = (
-                    caps[1].parse::<i32>().unwrap(),
+                    caps[1].parse::<u32>().unwrap(),
                     caps[2].parse::<u32>().unwrap(),
                     caps[3].parse::<u32>().unwrap(),
                 );
@@ -655,9 +690,14 @@ impl FtpStream {
                     caps[5].parse::<u32>().unwrap(),
                     caps[6].parse::<u32>().unwrap(),
                 );
-                Ok(Some(
-                    Utc.ymd(year, month, day).and_hms(hour, minute, second),
-                ))
+                Ok(Some(DateTime {
+                    year,
+                    month,
+                    day,
+                    hour,
+                    minute,
+                    second,
+                }))
             }
             None => Ok(None),
         }

@@ -29,7 +29,7 @@
 //! before authentication.
 //!
 #![cfg_attr(
-    all(feature = "secure", not(feature = "native-tls")),
+    feature = "openssl",
     doc = r##"
 ## FTPS Usage
 
@@ -51,7 +51,7 @@ let _ = ftp_stream.quit();
 "##
 )]
 #![cfg_attr(
-    all(feature = "secure", feature = "native-tls"),
+    feature = "native-ssl",
     doc = r##"
 ## FTPS Usage
 
@@ -74,12 +74,11 @@ let _ = ftp_stream.quit();
 )]
 #[macro_use]
 extern crate lazy_static;
-extern crate chrono;
 extern crate regex;
 
-#[cfg(all(feature = "secure", feature = "native-tls"))]
+#[cfg(feature = "native-tls")]
 pub extern crate native_tls;
-#[cfg(all(feature = "secure", not(feature = "native-tls")))]
+#[cfg(feature = "openssl")]
 pub extern crate openssl;
 
 mod data_stream;
@@ -87,7 +86,7 @@ mod ftp;
 pub mod status;
 pub mod types;
 
-pub use self::ftp::FtpStream;
+pub use self::ftp::{DateTime, FtpStream};
 pub use self::types::FtpError;
 
 /// A shorthand for a Result whose error type is always an FtpError.

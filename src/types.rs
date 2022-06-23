@@ -11,7 +11,7 @@ pub type Result<T> = std::result::Result<T, FtpError>;
 #[derive(Debug)]
 pub enum FtpError {
     ConnectionError(std::io::Error),
-    #[cfg(feature = "secure")]
+    #[cfg(any(feature = "openssl", feature = "native-tls"))]
     SecureError(String),
     InvalidResponse(String),
     InvalidAddress(std::net::AddrParseError),
@@ -23,25 +23,25 @@ impl From<std::io::Error> for FtpError {
     }
 }
 
-#[cfg(all(feature = "secure", feature = "native-tls"))]
+#[cfg(feature = "native-tls")]
 impl<S: std::fmt::Debug + 'static> From<native_tls::HandshakeError<S>> for FtpError {
     fn from(err: native_tls::HandshakeError<S>) -> Self {
         FtpError::SecureError(err.to_string())
     }
 }
-#[cfg(all(feature = "secure", not(feature = "native-tls")))]
+#[cfg(feature = "openssl")]
 impl From<openssl::error::ErrorStack> for FtpError {
     fn from(err: openssl::error::ErrorStack) -> Self {
         FtpError::SecureError(err.to_string())
     }
 }
-#[cfg(all(feature = "secure", not(feature = "native-tls")))]
+#[cfg(feature = "openssl")]
 impl From<openssl::ssl::Error> for FtpError {
     fn from(err: openssl::ssl::Error) -> Self {
         FtpError::SecureError(err.to_string())
     }
 }
-#[cfg(all(feature = "secure", not(feature = "native-tls")))]
+#[cfg(feature = "openssl")]
 impl<S: std::fmt::Debug> From<openssl::ssl::HandshakeError<S>> for FtpError {
     fn from(err: openssl::ssl::HandshakeError<S>) -> Self {
         FtpError::SecureError(err.to_string())
@@ -116,7 +116,7 @@ impl fmt::Display for FtpError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             FtpError::ConnectionError(ref ioerr) => write!(f, "FTP ConnectionError: {}", ioerr),
-            #[cfg(feature = "secure")]
+            #[cfg(any(feature = "openssl", feature = "native-tls"))]
             FtpError::SecureError(ref desc) => write!(f, "FTP SecureError: {}", desc),
             FtpError::InvalidResponse(ref desc) => {
                 write!(f, "FTP InvalidResponse: {}", desc)
@@ -130,7 +130,7 @@ impl std::error::Error for FtpError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
             FtpError::ConnectionError(ref ioerr) => Some(ioerr),
-            #[cfg(feature = "secure")]
+            #[cfg(any(feature = "openssl", feature = "native-tls"))]
             FtpError::SecureError(_) => None,
             FtpError::InvalidResponse(_) => None,
             FtpError::InvalidAddress(ref aperr) => Some(aperr),
@@ -140,8 +140,33 @@ impl std::error::Error for FtpError {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
+    use crate::DateTime;
+    use chrono::TimeZone;
+
+    #[test]
+    fn test_datetime() {
+        let year: u32 = 2024;
+        let month: u32 = 3;
+        let day: u32 = 28;
+        let hour: u32 = 13;
+        let minute: u32 = 33;
+        let second: u32 = 59;
+
+        let dt = DateTime {
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+        };
+        let chronos_dt = chrono::Utc
+            .ymd(year as i32, month, day)
+            .and_hms(hour, minute, second);
+
+        assert_eq!(dt.timestamp(), chronos_dt.timestamp() as u32);
+    }
 
     #[test]
     fn error_str() {
