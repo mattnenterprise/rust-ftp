@@ -140,8 +140,33 @@ impl std::error::Error for FtpError {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
+    use crate::DateTime;
+    use chrono::TimeZone;
+
+    #[test]
+    fn test_datetime() {
+        let year: u32 = 2024;
+        let month: u32 = 3;
+        let day: u32 = 28;
+        let hour: u32 = 13;
+        let minute: u32 = 33;
+        let second: u32 = 59;
+
+        let dt = DateTime {
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+        };
+        let chronos_dt = chrono::Utc
+            .ymd(year as i32, month, day)
+            .and_hms(hour, minute, second);
+
+        assert_eq!(dt.timestamp(), chronos_dt.timestamp() as u32);
+    }
 
     #[test]
     fn error_str() {

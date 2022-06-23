@@ -7,7 +7,6 @@ use super::{
 };
 
 use {
-    chrono::{offset::TimeZone, DateTime, Utc},
     regex::Regex,
     std::{
         borrow::Cow,
@@ -45,6 +44,40 @@ pub struct FtpStream {
     domain: Option<String>,
     #[cfg(feature = "openssl")]
     ssl_cfg: Option<SslContext>,
+}
+
+pub struct DateTime {
+    pub year: u32,
+    pub month: u32,
+    pub day: u32,
+    pub hour: u32,
+    pub minute: u32,
+    pub second: u32,
+}
+impl DateTime {
+    pub fn timestamp(&self) -> u32 {
+        let days_asof_m = [31_u16, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
+        let yyear = self.year - 1;
+        let countleap = ((yyear / 4) - (yyear / 100) + (yyear / 400))
+            - ((1970 / 4) - (1970 / 100) + (1970 / 400));
+
+        let m = if self.month > 1 {
+            let days_per_month = ((self.year % 4 == 0
+                && ((self.year % 100 != 0) || self.year % 400 == 0))
+                && self.month > 2
+                || self.month == 2 && self.day >= 29) as u16;
+            (days_asof_m[(self.month - 2) as usize] + days_per_month) as u32 * 86400
+        } else {
+            0
+        };
+        (self.year - 1970) * 365 * 86400
+            + (countleap * 86400)
+            + self.second
+            + (self.hour * 3600)
+            + (self.minute * 60)
+            + ((self.day - 1) * 86400)
+            + m
+    }
 }
 
 impl FtpStream {
@@ -641,14 +674,14 @@ impl FtpStream {
 
     /// Retrieves the modification time of the file at `pathname` if it exists.
     /// In case the file does not exist `None` is returned.
-    pub fn mdtm(&mut self, pathname: &str) -> crate::Result<Option<DateTime<Utc>>> {
+    pub fn mdtm(&mut self, pathname: &str) -> crate::Result<Option<DateTime>> {
         self.write_str(format!("MDTM {}\r\n", pathname))?;
         let Line(_, content) = self.read_response(status::FILE)?;
 
         match MDTM_RE.captures(&content) {
             Some(caps) => {
                 let (year, month, day) = (
-                    caps[1].parse::<i32>().unwrap(),
+                    caps[1].parse::<u32>().unwrap(),
                     caps[2].parse::<u32>().unwrap(),
                     caps[3].parse::<u32>().unwrap(),
                 );
@@ -657,9 +690,14 @@ impl FtpStream {
                     caps[5].parse::<u32>().unwrap(),
                     caps[6].parse::<u32>().unwrap(),
                 );
-                Ok(Some(
-                    Utc.ymd(year, month, day).and_hms(hour, minute, second),
-                ))
+                Ok(Some(DateTime {
+                    year,
+                    month,
+                    day,
+                    hour,
+                    minute,
+                    second,
+                }))
             }
             None => Ok(None),
         }

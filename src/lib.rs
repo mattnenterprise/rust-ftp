@@ -28,7 +28,8 @@
 //! For better security it's the good practice to switch to the secure mode
 //! before authentication.
 //!
-#![cfg_attr(feature = "openssl",
+#![cfg_attr(
+    feature = "openssl",
     doc = r##"
 ## FTPS Usage
 
@@ -49,7 +50,8 @@ let _ = ftp_stream.quit();
 ```
 "##
 )]
-#![cfg_attr(feature = "native-ssl",
+#![cfg_attr(
+    feature = "native-ssl",
     doc = r##"
 ## FTPS Usage
 
@@ -72,7 +74,6 @@ let _ = ftp_stream.quit();
 )]
 #[macro_use]
 extern crate lazy_static;
-extern crate chrono;
 extern crate regex;
 
 #[cfg(feature = "native-tls")]
@@ -85,7 +86,7 @@ mod ftp;
 pub mod status;
 pub mod types;
 
-pub use self::ftp::FtpStream;
+pub use self::ftp::{DateTime, FtpStream};
 pub use self::types::FtpError;
 
 /// A shorthand for a Result whose error type is always an FtpError.

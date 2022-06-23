@@ -8,13 +8,14 @@ description = "FTP client for Rust"
 readme = "README.md"
 license = "Apache-2.0/MIT"
 keywords = ["ftp"]
+edition = "2021"
 categories = ["network-programming"]
 
 [badges]
 travis-ci = { repository = "mattnenterprise/rust-ftp" }
 
 [lib]
-name ="ftp"
+name = "ftp"
 path = "src/lib.rs"
 
 [features]
@@ -25,11 +26,11 @@ debug_print = []
 [dependencies]
 lazy_static = "1"
 regex = "1"
-chrono = "0.4"
 openssl = { version = "0.10", optional = true }
 native-tls = { version = "0.2", optional = true }
 
-
-
 [package.metadata.docs.rs]
 rustc-args = ["--cfg", "openssl"]
+
+[dev-dependencies]
+chrono = "0.4"
