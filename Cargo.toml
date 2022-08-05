@@ -28,7 +28,7 @@ debug_print = []
 [dependencies]
 lazy_static = "1"
 regex = "1"
-chrono = "0.4"
+chrono = { version = "0.4.20", default-features = false, features = ["clock"] }
 openssl = { version = "0.10", optional = true }
 
 [dependencies.native-tls]
