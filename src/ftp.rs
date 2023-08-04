@@ -1,26 +1,26 @@
 //! FTP module.
 
+#[cfg(all(feature = "secure", feature = "native-tls"))]
+use native_tls::TlsConnector;
+
+use {
+    chrono::{DateTime, offset::TimeZone, Utc},
+    regex::Regex,
+    std::{
+        borrow::Cow,
+        io::{BufRead, BufReader, BufWriter, copy, Cursor, Read, Write},
+        net::{SocketAddr, TcpStream, ToSocketAddrs},
+        str::FromStr,
+    },
+};
+#[cfg(all(feature = "secure", not(feature = "native-tls")))]
+use openssl::ssl::{Ssl, SslContext};
+
 use super::{
     data_stream::DataStream,
     status,
     types::{FileType, FtpError, Line},
 };
-
-use {
-    chrono::{offset::TimeZone, DateTime, Utc},
-    regex::Regex,
-    std::{
-        borrow::Cow,
-        io::{copy, BufRead, BufReader, BufWriter, Cursor, Read, Write},
-        net::{SocketAddr, TcpStream, ToSocketAddrs},
-        str::FromStr,
-    },
-};
-
-#[cfg(all(feature = "secure", feature = "native-tls"))]
-use native_tls::TlsConnector;
-#[cfg(all(feature = "secure", not(feature = "native-tls")))]
-use openssl::ssl::{Ssl, SslContext};
 
 lazy_static! {
     // This regex extracts IP and Port details from PASV command response.
@@ -68,6 +68,28 @@ impl FtpStream {
                 }
             })
     }
+    #[cfg(not(feature = "secure"))]
+    pub fn connect_timeout(
+        addr: &SocketAddr,
+        timeout: core::time::Duration,
+    ) -> crate::Result<FtpStream> {
+        TcpStream::connect_timeout(addr, timeout)
+            .map_err(FtpError::ConnectionError)
+            .and_then(|stream| {
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Tcp(stream)),
+                    welcome_msg: None,
+                };
+
+                match ftp_stream.read_response(status::READY) {
+                    Ok(response) => {
+                        ftp_stream.welcome_msg = Some(response.1);
+                        Ok(ftp_stream)
+                    }
+                    Err(err) => Err(err),
+                }
+            })
+    }
 
     /// Creates an FTP Stream and returns the welcome message
     #[cfg(all(feature = "secure", feature = "native-tls"))]
@@ -91,11 +113,54 @@ impl FtpStream {
                 }
             })
     }
+    #[cfg(all(feature = "secure", feature = "native-tls"))]
+    pub fn connect_timeout(
+        addr: &SocketAddr, timeout: core::time::Duration) -> crate::Result<FtpStream> {
+        TcpStream::connect_timeout(addr, timeout)
+            .map_err(FtpError::ConnectionError)
+            .and_then(|stream| {
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Tcp(stream)),
+                    tls_ctx: None,
+                    domain: None,
+                    welcome_msg: None,
+                };
 
+                match ftp_stream.read_response(status::READY) {
+                    Ok(response) => {
+                        ftp_stream.welcome_msg = Some(response.1);
+                        Ok(ftp_stream)
+                    }
+                    Err(err) => Err(err),
+                }
+            })
+    }
     /// Creates an FTP Stream and returns the welcome message
     #[cfg(all(feature = "secure", not(feature = "native-tls")))]
     pub fn connect<A: ToSocketAddrs>(addr: A) -> crate::Result<FtpStream> {
         TcpStream::connect(addr)
+            .map_err(FtpError::ConnectionError)
+            .and_then(|stream| {
+                let mut ftp_stream = FtpStream {
+                    reader: BufReader::new(DataStream::Tcp(stream)),
+                    ssl_cfg: None,
+                    welcome_msg: None,
+                };
+
+                match ftp_stream.read_response(status::READY) {
+                    Ok(response) => {
+                        ftp_stream.welcome_msg = Some(response.1);
+                        Ok(ftp_stream)
+                    }
+                    Err(err) => Err(err),
+                }
+            })
+    }
+
+    #[cfg(all(feature = "secure", not(feature = "native-tls")))]
+    pub fn connect_timeout(
+        addr: &SocketAddr, timeout: core::time::Duration) -> crate::Result<FtpStream> {
+        TcpStream::connect_timeout(addr, timeout)
             .map_err(FtpError::ConnectionError)
             .and_then(|stream| {
                 let mut ftp_stream = FtpStream {
@@ -478,8 +543,8 @@ impl FtpStream {
     /// # assert!(conn.rm("retr.txt").is_ok());
     /// ```
     pub fn retr<F, T>(&mut self, filename: &str, reader: F) -> crate::Result<T>
-    where
-        F: Fn(&mut dyn Read) -> crate::Result<T>,
+        where
+            F: Fn(&mut dyn Read) -> crate::Result<T>,
     {
         let retr_command = format!("RETR {}\r\n", filename);
         {
@@ -487,13 +552,13 @@ impl FtpStream {
             self.read_response_in(&[status::ABOUT_TO_SEND, status::ALREADY_OPEN])
                 .and_then(|_| reader(&mut data_stream))
         }
-        .and_then(|res| {
-            self.read_response_in(&[
-                status::CLOSING_DATA_CONNECTION,
-                status::REQUESTED_FILE_ACTION_OK,
-            ])
-            .map(|_| res)
-        })
+            .and_then(|res| {
+                self.read_response_in(&[
+                    status::CLOSING_DATA_CONNECTION,
+                    status::REQUESTED_FILE_ACTION_OK,
+                ])
+                    .map(|_| res)
+            })
     }
 
     /// Simple way to retr a file from the server. This stores the file in memory.
@@ -519,7 +584,7 @@ impl FtpStream {
                 .map(|_| buffer)
                 .map_err(FtpError::ConnectionError)
         })
-        .map(Cursor::new)
+            .map(Cursor::new)
     }
 
     /// Removes the remote pathname from the server.
@@ -559,7 +624,7 @@ impl FtpStream {
             status::CLOSING_DATA_CONNECTION,
             status::REQUESTED_FILE_ACTION_OK,
         ])
-        .map(|_| ())
+            .map(|_| ())
     }
 
     /// Execute a command which returns list of strings in a separate stream
@@ -593,7 +658,7 @@ impl FtpStream {
                     Err(_) => {
                         return Err(FtpError::InvalidResponse(String::from(
                             "Invalid lines in response",
-                        )))
+                        )));
                     }
                 },
                 None => break Ok(lines),
